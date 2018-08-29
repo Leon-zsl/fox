@@ -7,9 +7,9 @@ YACC=bison
 
 DEFINES=
 INCLUDES=
+LIBS=
 CFLAGS=-Wall -g -O2 -std=c99
-LIBS=-ll -ly -lm
-LDFLAGS=
+LDFLAGS=-ll -ly
 
 SRCS=fox.c			\
 	lua_l.c			\
