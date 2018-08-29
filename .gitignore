@@ -1,0 +1,7 @@
+*~
+*.o
+cscope.out
+
+lua_l.c
+lua_y.c
+fox
