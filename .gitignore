@@ -1,6 +1,6 @@
 *~
 *.o
-cscope.out
+cscope.*
 
 lua_l.c
 lua_y.c

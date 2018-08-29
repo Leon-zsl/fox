@@ -9,7 +9,8 @@ DEFINES=
 INCLUDES=
 LIBS=
 CFLAGS=-Wall -g -O2 -std=c99
-LDFLAGS=-ll -ly
+#LDFLAGS=-ll -ly
+LDFLAGS=
 
 SRCS=fox.c			\
 	lua_l.c			\

@@ -3,8 +3,4 @@
 
 #include "fox.h"
 
-extern int yylex(void);
-extern int yyerror(const char *error);
-extern int yywrap(void);
-
 #endif
