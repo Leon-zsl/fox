@@ -1,5 +1,6 @@
 %{
 #include "parser.h"
+#include "fox.h"
 
 extern int yylineno;
 extern char *yytext;

@@ -13,7 +13,6 @@ int parse(const char *filename, struct syntax_tree *tree) {
 		return -1;
 	}
 
-	*tree = NULL;
 	//todo: parse file and create syntex tree
 
 	fclose(fp);

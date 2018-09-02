@@ -12,13 +12,11 @@ CFLAGS=-Wall -g -O2 -std=c99
 #LDFLAGS=-ll -ly
 LDFLAGS=
 
-# SRCS=fox.c			\
-# 	lua_l.c			\
-# 	lua_y.c			\
-# 	parser.c		\
-# 	generator.c
-
-SRCS = fox.c
+SRCS=fox.c			\
+	lua_l.c			\
+	lua_y.c			\
+	parser.c		\
+	generator.c
 
 OBJS=$(SRCS:.c=.o)
 
