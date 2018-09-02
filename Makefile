@@ -12,12 +12,13 @@ CFLAGS=-Wall -g -O2 -std=c99
 #LDFLAGS=-ll -ly
 LDFLAGS=
 
-SRCS=fox.c			\
-	lua_l.c			\
-	lua_y.c			\
-	lua_sym.c		\
-	parser.c		\
-	generator.c
+# SRCS=fox.c			\
+# 	lua_l.c			\
+# 	lua_y.c			\
+# 	parser.c		\
+# 	generator.c
+
+SRCS = fox.c
 
 OBJS=$(SRCS:.c=.o)
 
@@ -39,9 +40,15 @@ $(TARGET): $(OBJS)
 	$(CC) -c $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
 
 lua_y.c: lua.y
-	$(YACC) -o $@ $<
+	$(YACC) -d -o $@ $<
 
 lua_l.c: lua.l
 	$(LEX) -o $@ $<
 
-.PHONY: all clean lua
+test: test.c
+	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $< $(LDFLAGS) $(LIBS)
+
+test_clean:
+	rm -rf test.o test
+
+.PHONY: all clean lua test test_clean

@@ -4,4 +4,7 @@ cscope.*
 
 lua_l.c
 lua_y.c
+lua_y.h
 fox
+test
+
