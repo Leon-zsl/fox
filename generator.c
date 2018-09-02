@@ -2,18 +2,19 @@
 #include "parser.h"
 #include "generator.h"
 
-int generate(struct syntax_tree *tree, const char *filename) {
-	if(tree == NULL) {
-log_error("syntax tree is invalid");
+int generate(const char *filename, struct syntax_tree *tree) {
+	if(!tree) {
+		log_error("syntax tree is invalid");
 		return -1;
 	}
 
 	FILE *fp = fopen(filename, "wb");
-	if(fp == NULL) {
+	if(!fp) {
 		log_error("open file failed %s", filename);
 		return -1;
 	}
 
+	log_info("generate file:%s", filename);
 	//todo: traverse syntax tree and generate file
 	
 	fclose(fp);

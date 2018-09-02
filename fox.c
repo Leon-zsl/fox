@@ -83,7 +83,8 @@ int translate(const char *src, const char *dest) {
 			char curdest[1024];
 			strcpy(curdest, dest);
 			strcat(curdest, ent->d_name);
-
+			char * extlua = strrchr(curdest, ".lua");
+			strcpy(extlua, ".js");
 			translate(cursrc, curdest);
 		}
 		closedir(dir);
