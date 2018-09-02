@@ -15,20 +15,23 @@ int ensure_path(const char *srcpath, const char *destpath) {
 		return val;
 	}
 
-	char *destdir = NULL;	
+	char *dest = malloc(strlen(destpath)+1);
+	strcpy(dest, destpath);
+	char *destdir = NULL;
+	
 	struct stat stsrc;
 	stat(srcpath, &stsrc);
 	if(S_ISREG(stsrc.st_mode)) {
-		char *d = malloc(strlen(destpath)+1);
-		strcpy(d, destpath);
-		destdir = dirname(d);
-		free(d);
+		destdir = dirname(dest);
 	} else if(S_ISDIR(stsrc.st_mode)) {
-		destdir = (char*)destpath;
+		destdir = dest;
 	}
 
 	val = access(destdir, W_OK);
-	if(!val) return 0;
+	if(!val) {
+		free(dest);
+		return 0;
+	}
 
 	//create dest folder
 	char cmd[1024];
@@ -37,8 +40,11 @@ int ensure_path(const char *srcpath, const char *destpath) {
 	val = access(destdir, W_OK);
 	if(val) {
 		log_error("can not access destpath:%s", destpath);
+		free(dest);
 		return val;
 	}
+
+	free(dest);
 	return 0;
 }
 
@@ -53,13 +59,13 @@ int translate(const char *src, const char *dest) {
 			log_warn("src is not lua file: %s", src);
 			return 0;
 		}
-		
+
 		struct syntax_tree tree;
 		tree_init(&tree);
 		int val = parse(src, &tree);
 		if(val) return val;
 
-		val = generate(&tree, dest);
+		val = generate(dest, &tree);
 		tree_release(&tree);
 		if(val) return val;
 	} else if(S_ISDIR(st.st_mode)) {
@@ -82,9 +88,11 @@ int translate(const char *src, const char *dest) {
 
 			char curdest[1024];
 			strcpy(curdest, dest);
+			strcat(curdest, "/");
 			strcat(curdest, ent->d_name);
-			char * extlua = strrchr(curdest, ".lua");
+			char * extlua = strrchr(curdest, '.');
 			strcpy(extlua, ".js");
+
 			translate(cursrc, curdest);
 		}
 		closedir(dir);
