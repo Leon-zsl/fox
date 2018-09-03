@@ -15,7 +15,7 @@ int ensure_path(const char *srcpath, const char *destpath) {
 		return val;
 	}
 
-	char *destdir;	
+	char *destdir = NULL;
 	char *dest = strdup(destpath);
 	struct stat stsrc;
 	stat(srcpath, &stsrc);
