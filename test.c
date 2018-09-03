@@ -15,11 +15,13 @@ int main(int argc, char **argv) {
 	list_push_head(&l, &n2);
 
 	list_foreach(&l, handle);
-
+	list_foreach_reverse(&l, handle);
+	
 	list_pop_tail(&l);
 	list_pop_tail(&l);
 	list_pop_tail(&l);
 
 	list_foreach(&l, handle);
+	list_foreach_reverse(&l, handle);
 	return 0;
 }

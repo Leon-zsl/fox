@@ -52,7 +52,11 @@ static inline struct node *list_pop_tail(struct list *l) {
 }
 
 static inline void list_foreach(struct list *l, list_handler h) {
-	for(struct node *n = list_begin(l); n != list_end(l); n = list_next(n)) h(n);
+	for(struct node *n = list_head(l); n != list_end(l); n = list_next(n)) h(n);
+}
+
+static inline void list_foreach_reverse(struct list *l, list_handler h) {
+	for(struct node *n = list_tail(l); n != list_end(l); n = list_prev(n)) h(n);
 }
 
 #endif
