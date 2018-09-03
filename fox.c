@@ -16,7 +16,8 @@ int ensure_path(const char *srcpath, const char *destpath) {
 	}
 
 	char *destdir = NULL;
-	char *dest = strdup(destpath);
+	char *dest = malloc(strlen(destpath)+1);
+	strcpy(dest, destpath);
 	struct stat stsrc;
 	stat(srcpath, &stsrc);
 	if(S_ISREG(stsrc.st_mode)) {
@@ -120,13 +121,15 @@ int main(int argc, char **argv) {
 	log_info("translating start... src: %s, dest: %s\n", argv[1], argv[2]);
 
 	int srclen = strlen(argv[1]);
-	char *srcpath = strdup(argv[1]);
+	char *srcpath = malloc(srclen+1);
+	strcpy(srcpath, argv[1]);
 	if(srcpath[srclen-1] == '/') {
 		srcpath[srclen-1] = '\0';
 	}
 
 	int destlen = strlen(argv[2]);
-	char *destpath = strdup(argv[2]);
+	char *destpath = malloc(srclen+1);
+	strcpy(destpath, argv[2]);
 	if(destpath[destlen-1] == '/') {
 		destpath[destlen-1] = '\0';
 	}
