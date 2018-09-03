@@ -48,30 +48,31 @@ int ensure_path(const char *srcpath, const char *destpath) {
 	return 0;
 }
 
-int translate(const char *src, const char *dest) {
-	int val = ensure_path(src, dest);
+int translate(const char *srcpath, const char *destpath) {
+	int val = ensure_path(srcpath, destpath);
 	if(val) return val;
 
 	struct stat st;
-	stat(src, &st);
+	stat(srcpath, &st);
 	if(S_ISREG(st.st_mode)) {
-		if(strcmp(strrchr(src, '.'), ".lua")) {
-			log_warn("src is not lua file: %s", src);
+		char *extname = strrchr(srcpath, '.');
+		if(!extname || strcmp(extname, ".lua")) {
+			log_info("skip non-lua file: %s", srcpath);
 			return 0;
 		}
 
 		struct syntax_tree tree;
 		tree_init(&tree);
-		int val = parse(src, &tree);
+		int val = parse(srcpath, &tree);
 		if(val) return val;
 
-		val = generate(dest, &tree);
+		val = generate(destpath, &tree);
 		tree_release(&tree);
 		if(val) return val;
 	} else if(S_ISDIR(st.st_mode)) {
-		DIR *dir = opendir(src);
+		DIR *dir = opendir(srcpath);
 		if(!dir) {
-			log_error("opendir failed:%s", src);
+			log_error("opendir failed:%s", srcpath);
 			return -1;
 		}
 
@@ -79,25 +80,27 @@ int translate(const char *src, const char *dest) {
 		while((ent = readdir(dir)) != NULL) {
 			if(!strcmp(ent->d_name, ".")) continue;
 			if(!strcmp(ent->d_name, "..")) continue;
-			char *extname = strrchr(ent->d_name, '.');
-			if(!extname || strcmp(extname, ".lua")) continue;
 
 			char cursrc[1024];
-			strcpy(cursrc, src);
+			strcpy(cursrc, srcpath);
+			strcat(cursrc, "/");
 			strcat(cursrc, ent->d_name);
 
 			char curdest[1024];
-			strcpy(curdest, dest);
+			strcpy(curdest, destpath);
 			strcat(curdest, "/");
 			strcat(curdest, ent->d_name);
-			char * extlua = strrchr(curdest, '.');
-			strcpy(extlua, ".js");
+			char * extname = strrchr(curdest, '.');
+			if(extname && !strcmp(extname, ".lua")) {
+				strcpy(extname, ".js");
+			}
 
-			translate(cursrc, curdest);
+			int val = translate(cursrc, curdest);
+			if(val) return val;
 		}
 		closedir(dir);
 	} else {
-		log_warn("illeagal file: %s", src);
+		log_warn("illeagal file: %s", srcpath);
 		return 0;
 	}
 
@@ -117,11 +120,18 @@ int main(int argc, char **argv) {
 	}
 
 	log_info("translating start... src: %s, dest: %s\n", argv[1], argv[2]);
-	
-	char *srcpath = malloc(strlen(argv[1])+1);
-	strcpy(srcpath, argv[1]);
-	char *destpath = malloc(strlen(argv[2])+1);
-	strcpy(destpath, argv[2]);
+
+	int srclen = strlen(argv[1]);
+	char *srcpath = strdup(argv[1]);
+	if(srcpath[srclen-1] == '/') {
+		srcpath[srclen-1] = '\0';
+	}
+
+	int destlen = strlen(argv[2]);
+	char *destpath = strdup(argv[2]);
+	if(destpath[destlen-1] == '/') {
+		destpath[destlen-1] = '\0';
+	}
 
 	int val = translate(srcpath, destpath);
 	if(val) {
