@@ -15,10 +15,8 @@ int ensure_path(const char *srcpath, const char *destpath) {
 		return val;
 	}
 
-	char *dest = malloc(strlen(destpath)+1);
-	strcpy(dest, destpath);
-	char *destdir = NULL;
-	
+	char *destdir;	
+	char *dest = strdup(destpath);
 	struct stat stsrc;
 	stat(srcpath, &stsrc);
 	if(S_ISREG(stsrc.st_mode)) {
