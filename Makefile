@@ -15,6 +15,8 @@ LDFLAGS=
 SRCS=fox.c			\
 	lua_l.c			\
 	lua_y.c			\
+	symbol.c		\
+	syntax.c		\
 	parser.c		\
 	generator.c
 

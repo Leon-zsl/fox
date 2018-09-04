@@ -1,5 +1,10 @@
 #include "fox.h"
+#include "symbol.h"
+#include "syntax.h"
 #include "parser.h"
+
+void yyset_in(FILE *in);
+void yyset_out(FILE *out);
 
 int parse(const char *filename, struct syntax_tree *tree) {
 	if(!tree) {
@@ -14,7 +19,15 @@ int parse(const char *filename, struct syntax_tree *tree) {
 	}
 
 	log_info("parse file:%s", filename);
+	yyset_in(fp);
+	yyset_out(stdout);
+
 	//todo: parse file and create syntex tree
+	int val = yyparse();
+	if(val) {
+		fclose(fp);
+		return val;
+	}
 
 	fclose(fp);
 	return 0;

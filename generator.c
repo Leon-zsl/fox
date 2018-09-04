@@ -1,4 +1,6 @@
 #include "fox.h"
+#include "symbol.h"
+#include "syntax.h"
 #include "parser.h"
 #include "generator.h"
 

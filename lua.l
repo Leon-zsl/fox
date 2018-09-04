@@ -1,5 +1,5 @@
 %{
-#include "parser.h"
+#include "lua_y.h"
 
 extern char *yytext;
 

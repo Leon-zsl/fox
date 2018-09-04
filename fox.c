@@ -5,6 +5,8 @@
 #include <libgen.h>
 
 #include "fox.h"
+#include "syntax.h"
+#include "symbol.h"
 #include "parser.h"
 #include "generator.h"
 
@@ -60,13 +62,12 @@ int translate(const char *srcpath, const char *destpath) {
 			return 0;
 		}
 
-		struct syntax_tree tree;
-		tree_init(&tree);
-		int val = parse(srcpath, &tree);
+		struct syntax_tree *tree = syntax_tree_create();
+		int val = parse(srcpath, tree);
 		if(val) return val;
 
-		val = generate(destpath, &tree);
-		tree_release(&tree);
+		val = generate(destpath, tree);
+		syntax_tree_release(tree);
 		if(val) return val;
 	} else if(S_ISDIR(st.st_mode)) {
 		DIR *dir = opendir(srcpath);

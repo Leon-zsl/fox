@@ -1,5 +1,6 @@
 %{
-#include "parser.h"
+#include "symbol.h"
+#include "syntax.h"
 #include "fox.h"
 
 extern int yylineno;
@@ -45,13 +46,17 @@ int yylex(void);
 
 %%
 
-program:		
+program: statement_list { printf("program\n"); }
 		;
 
-require_list:	
+require_list: 	  /* empty */
+				 | require_list require { printf("require list\n"); }
 		;
 
-require:		
+require:		REQUIRE '(' NAME ')'
+				{
+					
+				}
 		;
 
 statement_list:	
@@ -99,5 +104,5 @@ assign:
 %%
 
 void yyerror(const char *msg) {
-	printf("%d: %s  at  %s \n", yylineno, msg, yytext);
+	log_error("%d: %s  at  %s \n", yylineno, msg, yytext);
 }
