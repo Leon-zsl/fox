@@ -16,9 +16,10 @@ extern char *yytext;
 #define yyparse_debug(msg)
 #endif
 
-void yyinfo(const char *msg);
-void yywarn(const char *msg);
-void yyerror(const char *msg);
+#define yyerror(msg) log_error("%s:%d, %s at %s \n", yyfilename, yylineno, (msg), yytext)
+#define yywarn(msg) log_warn("%s:%d, %s at %s \n", yyfilename, yylineno, (msg), yytext)
+#define yyinfo(msg) log_info("%s:%d, %s at %s \n", yyfilename, yylineno, (msg), yytext)
+
 %}
 
 %union {
@@ -110,14 +111,8 @@ assign:
 
 %%
 
+/* 
 void yyerror(const char *msg) {
 	log_error("%s:%d, %s at %s \n", yyfilename, yylineno, msg, yytext);
 }
-
-void yywarn(const char *msg) {
-	log_warn("%s:%d, %s at %s \n", yyfilename, yylineno, msg, yytext);
-}
-
-void yyinfo(const char *msg) {
-	log_info("%s:%d, %s at %s \n", yyfilename, yylineno, msg, yytext);
-}
+*/
