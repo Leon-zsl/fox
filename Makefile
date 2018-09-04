@@ -12,26 +12,26 @@ CFLAGS=-Wall -g -O2 -std=c99
 #LDFLAGS=-ll -ly
 LDFLAGS=
 
-SRCS=fox.c			\
-	lua_l.c			\
+SRCS=lua_l.c		\
 	lua_y.c			\
 	symbol.c		\
 	syntax.c		\
 	parser.c		\
-	generator.c
+	generator.c		\
+	fox.c
 
 OBJS=$(SRCS:.c=.o)
 
 TARGET=fox
 
-all: $(TARGET)
+all: lua $(TARGET)
+
+lua: lua_l.c lua_y.c
 
 clean:
-	rm -rf lua_y.c lua_l.c
+	rm -rf lua_l.c lua_y.c lua_y.h
 	rm -rf *.o
 	rm -rf $(TARGET)
-
-lua: lua_y.c lua_l.c
 
 $(TARGET): $(OBJS)
 	$(CC)  -o $@ $^ $(LDFLAGS) $(LIBS)

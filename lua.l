@@ -52,6 +52,8 @@ void yylex_debug(const char *msg);
 ")"						{ yylex_debug(")"); return RPARENTHESE; }
 "[" 					{ yylex_debug("["); return LBRACKET; }
 "]"						{ yylex_debug("]"); return RBRACKET; }
+","						{ yylex_debug(","); return COMMA; }
+":"						{ yylex_debug(":"); return COLON; }
 
 [a-zA-Z_][a-zA-Z0-9_]* 	{ yylex_debug("name"); return NAME; }
 
