@@ -23,24 +23,25 @@ int parse(const char *filename, struct syntax_tree *tree) {
 		return -1;
 	}
 
+	/* todo: parse file and create syntex tree */	
 	log_info("parse file:%s", filename);
+
 	yyset_in(fp);
 	yyset_out(stdout);
 	yyset_filename(filename);
 	yyset_lineno(1);
 
-	int val = yylex();
-	while(val != YY_NULL) {
-		log_info("yylex result:%d", val);
-		val = yylex();
-	}
-
-	/* todo: parse file and create syntex tree */	
-	/* int val = yyparse(); */
-	/* if(val) { */
-	/* 	fclose(fp); */
-	/* 	return val; */
+	/* int val = yylex(); */
+	/* while(val != YY_NULL) { */
+	/* 	log_info("yylex result:%d", val); */
+	/* 	val = yylex(); */
 	/* } */
+
+	int val = yyparse();
+	if(val) {
+		fclose(fp);
+		return val;
+	}
 
 	log_info("finish parse:%s", filename);
 	
