@@ -18,7 +18,6 @@ int yylex(void);
 
 %start program
 
-%token NEWLINE
 %token REQUIRE				
 %token FUNCTION
 %token LOCAL

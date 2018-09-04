@@ -1,9 +1,5 @@
 %{
 #include "lua_y.h"
-
-extern char *yytext;
-
-int yywrap(void);
 %}
 
 %option never-interactive
@@ -11,9 +7,9 @@ int yywrap(void);
 %%
 
 [ \t]+					;
-\r?\n					return NEWLINE;
-\r\n?					return NEWLINE;
-"--".					;
+\r?\n					yylineno++;
+\r\n?					yylineno++;
+"--".*					;
 
 "require"				return REQUIRE;
 "function"				return FUNCTION;
@@ -69,5 +65,6 @@ int yywrap(void);
 %%
 
 int yywrap(void) {
+	yylineno = 1;
 	return 1;
 }
