@@ -62,10 +62,12 @@ int translate(const char *srcpath, const char *destpath) {
 			return 0;
 		}
 
+		log_info("parse file:%s", srcpath);
 		struct syntax_tree *tree = syntax_tree_create();
 		int val = parse(srcpath, tree);
 		if(val) return val;
 
+		log_info("generate file:%s", destpath);
 		val = generate(destpath, tree);
 		syntax_tree_release(tree);
 		if(val) return val;

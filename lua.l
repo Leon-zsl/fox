@@ -2,7 +2,16 @@
 #include "lua_y.h"
 #include "fox.h"
 
-void yylex_debug(const char *msg);
+extern char yyfilename[];
+extern int yylineno;
+extern char *yytext;
+
+#define YYLEX_DEBUG 0
+#if YYLEX_DEBUG
+#define yylex_debug(msg) log_info("%s:%d, %s at %s \n", yyfilename, yylineno, (msg), yytext)
+#else
+#define yylex_debug(msg)
+#endif
 %}
 
 %option never-interactive
@@ -82,8 +91,4 @@ const char *yyget_filename() {
 int yywrap(void) {
 	yylineno = 1;
 	return 1;
-}
-
-void yylex_debug(const char *msg) {
-	log_info("%s:%d, %s at %s \n", yyfilename, yylineno, msg, yytext);
 }

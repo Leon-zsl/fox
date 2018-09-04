@@ -9,7 +9,15 @@ extern char yyfilename[];
 extern int yylineno;
 extern char *yytext;
 
-void yyparse_debug(const char *msg);
+#define YYPARSE_DEBUG 1
+#if YYPARSE_DEBUG
+#define yyparse_debug(msg) log_info("%s:%d, %s at %s \n", yyfilename, yylineno, (msg), yytext)
+#else
+#define yyparse_debug(msg)
+#endif
+
+void yyinfo(const char *msg);
+void yywarn(const char *msg);
 void yyerror(const char *msg);
 %}
 
@@ -111,9 +119,5 @@ void yywarn(const char *msg) {
 }
 
 void yyinfo(const char *msg) {
-	log_info("%s:%d, %s at %s \n", yyfilename, yylineno, msg, yytext);
-}
-
-void yyparse_debug(const char *msg) {
 	log_info("%s:%d, %s at %s \n", yyfilename, yylineno, msg, yytext);
 }

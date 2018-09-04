@@ -16,7 +16,6 @@ int generate(const char *filename, struct syntax_tree *tree) {
 		return -1;
 	}
 
-	log_info("generate file:%s", filename);
 	//todo: traverse syntax tree and generate file
 	
 	fclose(fp);
