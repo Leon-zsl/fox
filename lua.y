@@ -3,11 +3,14 @@
 #include "syntax.h"
 #include "fox.h"
 
+int yylex(void);
+
+extern char yyfilename[1024];
 extern int yylineno;
 extern char *yytext;
 
-void yyerror(const char *error);
-int yylex(void);
+void yyparse_debug(const char *msg);
+void yyerror(const char *msg);
 %}
 
 %union {
@@ -52,10 +55,7 @@ require_list: 	  /* empty */
 				 | require_list require { printf("require list\n"); }
 		;
 
-require:		REQUIRE '(' NAME ')'
-				{
-					
-				}
+require:		REQUIRE '(' NAME ')' { }
 		;
 
 statement_list:	
@@ -103,5 +103,17 @@ assign:
 %%
 
 void yyerror(const char *msg) {
-	log_error("%d: %s  at  %s \n", yylineno, msg, yytext);
+	log_error("%s:%d, %s at %s \n", yyfilename, yylineno, msg, yytext);
+}
+
+void yywarn(const char *msg) {
+	log_warn("%s:%d, %s at %s \n", yyfilename, yylineno, msg, yytext);
+}
+
+void yyinfo(const char *msg) {
+	log_info("%s:%d, %s at %s \n", yyfilename, yylineno, msg, yytext);
+}
+
+void yyparse_debug(const char *msg) {
+	log_info("%s:%d, %s at %s \n", yyfilename, yylineno, msg, yytext);
 }

@@ -1,6 +1,7 @@
 *~
 *.o
 cscope.*
+core.[0-9]*
 
 lua_l.c
 lua_y.c

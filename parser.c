@@ -6,6 +6,7 @@
 void yyset_in(FILE *in);
 void yyset_out(FILE *out);
 void yyset_lineno(int lineno);
+void yyset_filename(const char *name);
 
 int parse(const char *filename, struct syntax_tree *tree) {
 	if(!tree) {
@@ -22,6 +23,7 @@ int parse(const char *filename, struct syntax_tree *tree) {
 	log_info("parse file:%s", filename);
 	yyset_in(fp);
 	yyset_out(stdout);
+	yyset_filename(filename);
 	yyset_lineno(1);
 
 	//todo: parse file and create syntex tree
