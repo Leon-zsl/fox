@@ -45,7 +45,7 @@ extern char *yytext;
 ">=" 					{ yylex_debug(">="); return GE; }
 "<" 					{ yylex_debug("<"); return LESS; }
 "<=" 					{ yylex_debug("<="); return LE; }
-"==" 					{ yylex_debug("=="); return EQUAL; }
+"==" 					{ yylex_debug("=="); return EQ; }
 "~=" 					{ yylex_debug("~="); return NE; }
 
 "+"						{ yylex_debug("+"); return ADD; }
@@ -64,15 +64,15 @@ extern char *yytext;
 ","						{ yylex_debug(","); return COMMA; }
 ":"						{ yylex_debug(":"); return COLON; }
 
-[a-zA-Z_][a-zA-Z0-9_]* 	{ yylex_debug("name"); return NAME; }
+[a-zA-Z_][a-zA-Z0-9_]* 	{ yylex_debug("name"); yylval.string = yytext; return NAME; }
 
-\"[^\"]*\" 				{ yylex_debug("string"); return STRING; }
-\'[^\']*\' 				{ yylex_debug("string"); return STRING; }
+\"[^\"]*\" 				{ yylex_debug("string"); yylval.string = yytext; return STRING; }
+\'[^\']*\' 				{ yylex_debug("string"); yylval.string = yytext; return STRING; }
 
 -?[0-9]+("."[0-9]*)? | 
 -?([0-9]+)?"."[0-9]+ |
 -?[0-9]+("."[0-9]*)?[eE][+-]?[0-9]+ |
--?([0-9]+)?"."[0-9]+[eE][+-]?[0-9]+ { yylex_debug("number"); return NUMBER; }
+-?([0-9]+)?"."[0-9]+[eE][+-]?[0-9]+ { yylex_debug("number"); yylval.number = atof(yytext); return NUMBER; }
 
 .						{ yylex_debug("unknown"); return *yytext; }
 

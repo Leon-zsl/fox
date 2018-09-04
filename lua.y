@@ -23,9 +23,8 @@ extern char *yytext;
 %}
 
 %union {
-	int vint;
-	double vfloat;
-	char* vstring;
+	double number;
+	char* string;
 }
 
 %start program
@@ -38,7 +37,7 @@ extern char *yytext;
 %token NIL
 
 %token IF THEN ELSE ELSEIF WHILE REPEAT UNTIL
-%token AND OR NOT GREATER GE LESS LE EQUAL NE
+%token AND OR NOT GREATER GE LESS LE EQ NE
 %token ADD SUB MULTY DIV MOD CONCAT
 %token ASSIGN FIELD LPARENTHESE RPARENTHESE LBRACKET RBRACKET COMMA COLON
 
