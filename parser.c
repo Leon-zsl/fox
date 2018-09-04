@@ -3,6 +3,8 @@
 #include "syntax.h"
 #include "parser.h"
 
+/* #define YY_NULL 0 */
+
 int yylex(void);
 void yyset_in(FILE *in);
 void yyset_out(FILE *out);
@@ -27,13 +29,13 @@ int parse(const char *filename, struct syntax_tree *tree) {
 	yyset_filename(filename);
 	yyset_lineno(1);
 
-	//todo: parse file and create syntex tree
 	/* int val = yylex(); */
-	/* while(val != EOF) { */
+	/* while(val != YY_NULL) { */
 	/* 	log_info("yylex result:%d", val); */
 	/* 	val = yylex(); */
 	/* } */
 
+	/* todo: parse file and create syntex tree */	
 	int val = yyparse();
 	if(val) {
 		fclose(fp);
