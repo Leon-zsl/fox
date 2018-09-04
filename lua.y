@@ -5,7 +5,7 @@
 
 int yylex(void);
 
-extern char yyfilename[1024];
+extern char yyfilename[];
 extern int yylineno;
 extern char *yytext;
 
