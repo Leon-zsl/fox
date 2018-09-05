@@ -2,6 +2,12 @@
 #include "symbol.h"
 #include "parser.h"
 
+static void syntax_node_init(struct syntax_node *n, int ty);
+static void syntax_node_add_child(struct syntax_node *p, struct syntax_node *c);
+static void syntax_node_release(struct syntax_node *n);
+static void syntax_node_release_children(struct syntax_node *n);
+static void syntax_node_walk(struct syntax_node *n, syntax_node_handler h);
+
 #define YY_NULL 0
 
 int yylex(void);
@@ -53,24 +59,15 @@ void syntax_tree_release(struct syntax_tree *t) {
 }
 
 void syntax_tree_walk(struct syntax_tree *t, syntax_node_handler h) {
-	//do nothing now
+	if(!t || !t->root) return;
+	syntax_node_walk(t->root, h);
 }
 
-void syntax_node_init(struct syntax_node *n, int ty) {
+static void syntax_node_init(struct syntax_node *n, int ty) {
 	n->next = NULL;
 	n->parent = NULL;
 	n->children = NULL;
-
 	n->type = ty;
-}
-
-static void syntax_node_release_children(struct syntax_node *n) {
-	struct syntax_node *c = n->children;
-	while(c != NULL) {
-		struct syntax_node *cc = c;
-		c = c->next;
-		syntax_node_release(cc);
-	}
 }
 
 static void syntax_node_add_child(struct syntax_node *p, struct syntax_node *c) {
@@ -88,7 +85,25 @@ static void syntax_node_add_child(struct syntax_node *p, struct syntax_node *c) 
 	c->parent = p;
 }
 
-void syntax_node_release(struct syntax_node *n) {
+static void syntax_node_walk(struct syntax_node *n, syntax_node_handler h) {
+	h(n);
+	struct syntax_node *c = n->children;
+	while(c != NULL) {
+		h(c);
+		c = c->next;
+	}
+}
+
+static void syntax_node_release_children(struct syntax_node *n) {
+	struct syntax_node *c = n->children;
+	while(c != NULL) {
+		struct syntax_node *cc = c;
+		c = c->next;
+		syntax_node_release(cc);
+	}
+}
+
+static void syntax_node_release(struct syntax_node *n) {
 	switch(n->type) {
 	case SNT_STATEMENT:
 		release_syntax_statement((struct syntax_statement *)n);

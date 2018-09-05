@@ -73,7 +73,7 @@ program: statement_list
 				{
 					printf("program\n");
 					struct syntax_tree *t = syntax_tree_create();
-					t->root = $1;
+					t->root = (struct syntax_node*)($1);
 					$$ = t;
 				}
 		;

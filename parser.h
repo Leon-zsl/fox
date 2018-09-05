@@ -5,7 +5,6 @@ struct syntax_node {
 	struct syntax_node *next;
 	struct syntax_node *parent;
 	struct syntax_node *children;
-	
 	int type;
 };
 
@@ -17,13 +16,9 @@ struct syntax_tree {
 
 extern struct syntax_tree *parse_tree;
 struct syntax_tree *parse(const char *filename);
-
 struct syntax_tree *syntax_tree_create();
 void syntax_tree_release(struct syntax_tree *t);
 void syntax_tree_walk(struct syntax_tree *t, syntax_node_handler h);
-
-void syntax_node_init(struct syntax_node *n, int ty);
-void syntax_node_release(struct syntax_node *n);
 
 enum syntax_node_type {
 	SNT_STATEMENT,
