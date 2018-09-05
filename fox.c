@@ -5,10 +5,9 @@
 #include <libgen.h>
 
 #include "fox.h"
-#include "syntax.h"
 #include "symbol.h"
 #include "parser.h"
-#include "generator.h"
+#include "translator.h"
 
 int ensure_path(const char *srcpath, const char *destpath) {
 	int val = access(srcpath, R_OK);
@@ -49,7 +48,7 @@ int ensure_path(const char *srcpath, const char *destpath) {
 	return 0;
 }
 
-int translate(const char *srcpath, const char *destpath) {
+int process(const char *srcpath, const char *destpath) {
 	int val = ensure_path(srcpath, destpath);
 	if(val) return val;
 
@@ -63,12 +62,11 @@ int translate(const char *srcpath, const char *destpath) {
 		}
 
 		log_info("parse file:%s", srcpath);
-		struct syntax_tree *tree = syntax_tree_create();
-		int val = parse(srcpath, tree);
-		if(val) return val;
+		struct syntax_tree *tree = parse(srcpath);
+		if(!tree) return -1;
 
-		log_info("generate file:%s", destpath);
-		val = generate(destpath, tree);
+		log_info("translate file:%s", destpath);
+		int val = translate(destpath, tree);
 		syntax_tree_release(tree);
 		if(val) return val;
 	} else if(S_ISDIR(st.st_mode)) {
@@ -97,7 +95,7 @@ int translate(const char *srcpath, const char *destpath) {
 				strcpy(extname, ".js");
 			}
 
-			int val = translate(cursrc, curdest);
+			int val = process(cursrc, curdest);
 			if(val) return val;
 		}
 		closedir(dir);
@@ -137,7 +135,7 @@ int main(int argc, char **argv) {
 		destpath[destlen-1] = '\0';
 	}
 
-	int val = translate(srcpath, destpath);
+	int val = process(srcpath, destpath);
 	if(val) {
 		log_error("translating error! error code:%d\n", val);
 	} else {

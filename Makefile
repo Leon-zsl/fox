@@ -15,9 +15,8 @@ LDFLAGS=
 SRCS=lua_l.c		\
 	lua_y.c			\
 	symbol.c		\
-	syntax.c		\
 	parser.c		\
-	generator.c		\
+	translator.c	\
 	fox.c
 
 OBJS=$(SRCS:.c=.o)

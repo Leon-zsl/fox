@@ -1,7 +1,7 @@
 %{
-#include "symbol.h"
-#include "syntax.h"
 #include "fox.h"
+#include "symbol.h"
+#include "parser.h"
 
 int yylex(void);
 
@@ -25,27 +25,39 @@ extern char *yytext;
 %union {
 	double number;
 	char* string;
+
+	struct syntax_statement *stmt;
+	struct syntax_function *func;
+	struct syntax_requirement *req;
+	struct syntax_declaration *decl;
+	struct syntax_block *block;
+	struct syntax_expression *expr;
+	struct syntax_variable *var;
+	struct syntax_comment *cmt;
 }
 
 %start program
 
-%token REQUIRE				
-%token FUNCTION
-%token LOCAL
-%token RETURN
-%token END						
-%token NIL
+%token REQUIRE FUNCTION LOCAL RETURN END NIL
 
 %token IF THEN ELSE ELSEIF WHILE REPEAT UNTIL
 %token AND OR NOT GREATER GE LESS LE EQ NE
 %token ADD SUB MULTY DIV MOD CONCAT
 %token ASSIGN FIELD LPARENTHESE RPARENTHESE LBRACKET RBRACKET COMMA COLON
 
-%token NAME
-%token STRING
-%token NUMBER
+%token<string> COMMENT NAME STRING
+%token<number> NUMBER
 
-%right ASSIGN						
+%type<stmt> statement
+%type<func>	function
+%type<req> requirement
+%type<decl> declaration
+%type<block> block
+%type<expr> expression
+%type<var>	variable
+%type<cmt> comment
+
+%right ASSIGN				
 %left AND OR 						
 %left GREATER GE LESS LE EQUAL NE
 %left CONCAT
@@ -59,11 +71,11 @@ extern char *yytext;
 program: statement_list { printf("program\n"); }
 		;
 
-require_list: 	  /* empty */
-				 | require_list require { printf("require list\n"); }
+requirement_list: 	  /* empty */
+				 | requirement_list requirement { printf("require list\n"); }
 		;
 
-require:		REQUIRE '(' NAME ')' { }
+requirement:		REQUIRE '(' NAME ')' { }
 		;
 
 statement_list:	
@@ -87,10 +99,10 @@ expression_list:
 expression:		
 		;
 
-declare_list:	
+declaration_list:	
 		;
 
-declare:		
+declaration:		
 		;
 
 block_list:		
@@ -105,7 +117,7 @@ variable_list:
 variable:		
 		;
 
-assign:			
+comment:		COMMENT { $$ = create_syntax_comment(yylval.string); }
 		;
 
 %%

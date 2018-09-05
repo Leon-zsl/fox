@@ -12,8 +12,6 @@ extern char *yytext;
 #else
 #define yylex_debug(msg)
 #endif
-
-char *copystr(const char *s);
 %}
 
 %option never-interactive
@@ -23,7 +21,6 @@ char *copystr(const char *s);
 [ \t]+					{ yylex_debug("blank"); }
 \r?\n					{ yylex_debug("newline"); yylineno++; }
 \r\n?					{ yylex_debug("newline"); yylineno++; }
-"--".*					{ yylex_debug("comment"); }
 
 "require"				{ yylex_debug("require"); return REQUIRE; }
 "function"				{ yylex_debug("function"); return FUNCTION; }
@@ -66,10 +63,12 @@ char *copystr(const char *s);
 ","						{ yylex_debug(","); return COMMA; }
 ":"						{ yylex_debug(":"); return COLON; }
 
-[a-zA-Z_][a-zA-Z0-9_]* 	{ yylex_debug("name"); yylval.string = copystr(yytext); return NAME; }
+"--".*					{ yylex_debug("comment"); yylval.string = strcopy(yytext+2); return COMMENT; }
 
-\"[^\"]*\" 				{ yylex_debug("string"); yylval.string = copystr(yytext); return STRING; }
-\'[^\']*\' 				{ yylex_debug("string"); yylval.string = copystr(yytext); return STRING; }
+[a-zA-Z_][a-zA-Z0-9_]* 	{ yylex_debug("name"); yylval.string = strcopy(yytext); return NAME; }
+
+\"[^\"]*\" 				{ yylex_debug("string"); yylval.string = strcopy(yytext); return STRING; }
+\'[^\']*\' 				{ yylex_debug("string"); yylval.string = strcopy(yytext); return STRING; }
 
 -?[0-9]+("."[0-9]*)? | 
 -?([0-9]+)?"."[0-9]+ |
@@ -93,12 +92,4 @@ const char *yyget_filename() {
 int yywrap(void) {
 	yylineno = 1;
 	return 1;
-}
-
-char *copystr(const char *s) {
-	size_t len = strlen(s);
-	char *v = malloc(len+1);
-	if(len > 0)	strcpy(v, s);
-	else v[0] = '\0';
-	return v;
 }

@@ -1,10 +1,9 @@
 #include "fox.h"
 #include "symbol.h"
-#include "syntax.h"
 #include "parser.h"
-#include "generator.h"
+#include "translator.h"
 
-int generate(const char *filename, struct syntax_tree *tree) {
+int translate(const char *filename, struct syntax_tree *tree) {
 	if(!tree) {
 		log_error("syntax tree is invalid");
 		return -1;
@@ -16,7 +15,7 @@ int generate(const char *filename, struct syntax_tree *tree) {
 		return -1;
 	}
 
-	//todo: traverse syntax tree and generate file
+	//todo: traverse syntax tree and translate it to file
 	
 	fclose(fp);
 	return 0;

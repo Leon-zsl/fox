@@ -55,4 +55,13 @@ typedef unsigned int uint32;
 typedef unsigned long long uint64;
 */
 
+static inline char *strcopy(const char *s) {
+	if(s == NULL) return NULL;
+	size_t l = strlen(s);
+	char *ds = malloc(l+1);
+	if(l == 0) ds[0] = '\0';
+	else strncpy(ds, s, l);
+	return ds;
+}
+
 #endif
