@@ -25,7 +25,7 @@ extern char *yytext;
 %union {
 	double number;
 	char* string;
-
+	struct syntax_tree *tree;
 	struct syntax_statement *stmt;
 	struct syntax_function *func;
 	struct syntax_requirement *req;
@@ -48,13 +48,14 @@ extern char *yytext;
 %token<string> COMMENT NAME STRING
 %token<number> NUMBER
 
-%type<stmt> statement
-%type<func>	function
-%type<req> requirement
-%type<decl> declaration
-%type<block> block
-%type<expr> expression
-%type<var>	variable
+%type<tree> program
+%type<stmt> statement statement_list
+%type<func>	function function_list
+%type<req> requirement requirement_list
+%type<decl> declaration declaration_list
+%type<block> block block_list
+%type<expr> expression expression_list
+%type<var>	variable variable_list
 %type<cmt> comment
 
 %right ASSIGN				
@@ -68,7 +69,13 @@ extern char *yytext;
 
 %%
 
-program: statement_list { printf("program\n"); }
+program: statement_list
+				{
+					printf("program\n");
+					struct syntax_tree *t = syntax_tree_create();
+					t->root = $1;
+					$$ = t;
+				}
 		;
 
 requirement_list: 	  /* empty */
