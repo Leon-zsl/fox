@@ -47,7 +47,8 @@ struct syntax_tree *syntax_tree_create() {
 }
 
 void syntax_tree_release(struct syntax_tree *t) {
-	syntax_node_release(t->root);
+	if(!t) return;
+	if(t->root)	syntax_node_release(t->root);
 	free(t);
 }
 

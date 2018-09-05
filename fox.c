@@ -119,7 +119,7 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	log_info("translating start... src: %s, dest: %s\n", argv[1], argv[2]);
+	log_info("processing start... src: %s, dest: %s\n", argv[1], argv[2]);
 
 	int srclen = strlen(argv[1]);
 	char *srcpath = malloc(srclen+1);
@@ -137,9 +137,9 @@ int main(int argc, char **argv) {
 
 	int val = process(srcpath, destpath);
 	if(val) {
-		log_error("translating error! error code:%d\n", val);
+		log_error("processing error! error code:%d\n", val);
 	} else {
-		log_info("translating succeed!\n");
+		log_info("processing succeed!\n");
 	}
 
 	free(srcpath);
