@@ -63,12 +63,18 @@ int process(const char *srcpath, const char *destpath) {
 
 		log_info("parse file:%s", srcpath);
 		struct syntax_tree *tree = parse(srcpath);
-		if(!tree) return -1;
+		if(!tree) {
+			log_error("parse file failed:%s", srcpath);
+			return -1;
+		}
 
 		log_info("translate file:%s", destpath);
 		int val = translate(destpath, tree);
 		syntax_tree_release(tree);
-		if(val) return val;
+		if(val) {
+			log_error("translate file failed:%s", destpath);
+			return val;
+		}
 	} else if(S_ISDIR(st.st_mode)) {
 		DIR *dir = opendir(srcpath);
 		if(!dir) {
