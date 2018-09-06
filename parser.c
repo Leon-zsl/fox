@@ -5,6 +5,8 @@
 #define YY_NULL 0
 
 int yylex(void);
+int yyparse(void);
+
 void yyset_in(FILE *in);
 void yyset_out(FILE *out);
 void yyset_lineno(int lineno);
@@ -19,22 +21,19 @@ struct syntax_tree *parse(const char *filename) {
 		return NULL;
 	}
 
-	//a new parse tree
-	parse_tree = NULL;
-
 	yyset_in(fp);
 	yyset_out(stdout);
 	yyset_filename(filename);
 	yyset_lineno(1);
 
 	/* yylex function test */
-	while(yylex() != YY_NULL);
+	/* while(yylex() != YY_NULL); */
 
-	/* int val = yyparse(); */
-	/* if(val) { */
-	/* 	fclose(fp); */
-	/* 	return val; */
-	/* } */
+	//a new parse tree
+	parse_tree = NULL;	
+	if(yyparse()) {
+		log_error("yyparse failed:%s", filename);
+	}
 
 	fclose(fp);
 	return parse_tree;
