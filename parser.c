@@ -2,12 +2,6 @@
 #include "symbol.h"
 #include "parser.h"
 
-static void syntax_node_init(struct syntax_node *n, int ty);
-static void syntax_node_add_child(struct syntax_node *p, struct syntax_node *c);
-static void syntax_node_release(struct syntax_node *n);
-static void syntax_node_release_children(struct syntax_node *n);
-static void syntax_node_walk(struct syntax_node *n, syntax_node_handler h);
-
 #define YY_NULL 0
 
 int yylex(void);
@@ -63,14 +57,20 @@ void syntax_tree_walk(struct syntax_tree *t, syntax_node_handler h) {
 	syntax_node_walk(t->root, h);
 }
 
-static void syntax_node_init(struct syntax_node *n, int ty) {
+void syntax_node_init(struct syntax_node *n, int ty) {
 	n->next = NULL;
 	n->parent = NULL;
 	n->children = NULL;
 	n->type = ty;
 }
 
-static void syntax_node_add_child(struct syntax_node *p, struct syntax_node *c) {
+void syntax_node_push_child_head(struct syntax_node *p, struct syntax_node *c) {
+	struct syntax_node *n = p->children;
+	p->children = c;
+	c->next = n;
+}
+
+void syntax_node_push_child_tail(struct syntax_node *p, struct syntax_node *c) {
 	struct syntax_node *cc = p->children;
 	struct syntax_node *pc = NULL;
 	while(cc != NULL) {
@@ -85,7 +85,57 @@ static void syntax_node_add_child(struct syntax_node *p, struct syntax_node *c) 
 	c->parent = p;
 }
 
-static void syntax_node_walk(struct syntax_node *n, syntax_node_handler h) {
+void syntax_node_push_sibling_head(struct syntax_node *p, struct syntax_node *c) {
+	struct syntax_node *n = p->next;
+	p->next = c;
+	c->next = n;
+}
+
+void syntax_node_push_sibling_tail(struct syntax_node *p, struct syntax_node *c) {
+	struct syntax_node *cc = p->next;
+	struct syntax_node *pc = NULL;
+	while(cc != NULL) {
+		pc = cc;
+		cc = cc->next;
+	}
+	if(pc) {
+		pc->next = c;
+	} else {
+		p->next = c;
+	}
+}
+
+int syntax_node_depth(struct syntax_node *n) {
+	size_t d = 1;
+	struct syntax_node *p = n->parent;
+	while(p) {
+		d++;
+		p = p->parent;
+	}
+	return d;
+}
+
+int syntax_node_children_count(struct syntax_node *n) {
+	size_t d = 0;
+	struct syntax_node *p = n->children;
+	while(p) {
+		d++;
+		p = p->next;
+	}
+	return d;
+}
+
+int syntax_node_sibling_count(struct syntax_node *n) {
+	size_t d = 0;
+	struct syntax_node *p = n->next;
+	while(p) {
+		d++;
+		p = p->next;
+	}
+	return d;
+}
+
+void syntax_node_walk(struct syntax_node *n, syntax_node_handler h) {
 	h(n);
 	struct syntax_node *c = n->children;
 	while(c != NULL) {
@@ -103,31 +153,46 @@ static void syntax_node_release_children(struct syntax_node *n) {
 	}
 }
 
-static void syntax_node_release(struct syntax_node *n) {
+void syntax_node_release(struct syntax_node *n) {
 	switch(n->type) {
-	case SNT_STATEMENT:
-		release_syntax_statement((struct syntax_statement *)n);
+	case SNT_PROGRAM:
+		release_syntax_program((struct syntax_program *)n);
 		break;
-	case SNT_FUNCTION:
-		release_syntax_function((struct syntax_function *)n);
+	case SNT_CHUNK:
+		release_syntax_chunk((struct syntax_chunk *)n);
 		break;
 	case SNT_REQUIREMENT:
 		release_syntax_requirement((struct syntax_requirement *)n);
 		break;
-	case SNT_DECLARATION:
-		release_syntax_declaration((struct syntax_declaration *)n);
+	case SNT_FUNCTION:
+		release_syntax_function((struct syntax_function *)n);
+		break;
+	case SNT_FUNCTIONCALL:
+		release_syntax_functioncall((struct syntax_functioncall *)n);
 		break;
 	case SNT_BLOCK:
 		release_syntax_block((struct syntax_block *)n);
 		break;
+	case SNT_STATEMENT:
+		release_syntax_statement((struct syntax_statement *)n);
+		break;
 	case SNT_EXPRESSION:
 		release_syntax_expression((struct syntax_expression *)n);
 		break;
-	case SNT_VARIABLE:
-		release_syntax_comment((struct syntax_comment *)n);
+	case SNT_TABLE:
+		release_syntax_table((struct syntax_table *)n);
 		break;
-	case SNT_COMMENT:
+	case SNT_FIELD:
+		release_syntax_field((struct syntax_field *)n);
+		break;
+	case SNT_VARIABLE:
 		release_syntax_variable((struct syntax_variable *)n);
+		break;
+	case SNT_ARGUMENT:
+		release_syntax_argument((struct syntax_argument *)n);
+		break;
+	case SNT_RETURN:
+		release_syntax_return((struct syntax_return *)n);
 		break;
 	default:
 		syntax_node_release_children(n);
@@ -136,48 +201,63 @@ static void syntax_node_release(struct syntax_node *n) {
 	}
 }
 
-struct syntax_statement *create_syntax_statement() {
-	struct syntax_statement *stmt = (struct syntax_statement *)malloc(sizeof(struct syntax_statement));
-	syntax_node_init(&stmt->n, SNT_STATEMENT);
-	return stmt;
+struct syntax_program *create_syntax_program() {
+	struct syntax_program *program = (struct syntax_program *)malloc(sizeof(struct syntax_program));
+	syntax_node_init(&program->n, SNT_PROGRAM);
+	return program;
 }
 
-void release_syntax_statement(struct syntax_statement *stmt) {
-	syntax_node_release_children(&stmt->n);
-	free(stmt);
+void release_syntax_program(struct syntax_program *program) {
+	syntax_node_release_children(&program->n);
+	free(program);	
 }
 
-struct syntax_function *create_syntax_function() {
-	struct syntax_function *func = (struct syntax_function *)malloc(sizeof(struct syntax_function));
-	syntax_node_init(&func->n, SNT_FUNCTION);
-	return func;
+struct syntax_chunk *create_syntax_chunk() {
+	struct syntax_chunk *chunk = (struct syntax_chunk *)malloc(sizeof(struct syntax_chunk));
+	syntax_node_init(&chunk->n, SNT_CHUNK);
+	return chunk;
 }
 
-void release_syntax_function(struct syntax_function *func) {
-	syntax_node_release_children(&func->n);
-	free(func);
+void release_syntax_chunk(struct syntax_chunk *chunk) {
+	syntax_node_release_children(&chunk->n);
+	free(chunk);
 }
 
-struct syntax_requirement *create_syntax_requirement() {
+struct syntax_requirement *create_syntax_requirement(const char *name) {
 	struct syntax_requirement *req = (struct syntax_requirement *)malloc(sizeof(struct syntax_requirement));
 	syntax_node_init(&req->n, SNT_REQUIREMENT);
+	req->name = strcopy(name);
 	return req;
 }
 
 void release_syntax_requirement(struct syntax_requirement *req) {
 	syntax_node_release_children(&req->n);
+	free(req->name);
 	free(req);
 }
 
-struct syntax_declaration *create_syntax_declaration() {
-	struct syntax_declaration *decl = (struct syntax_declaration *)malloc(sizeof(struct syntax_declaration));
-	syntax_node_init(&decl->n, SNT_DECLARATION);
-	return decl;
+struct syntax_function *create_syntax_function(const char *name) {
+	struct syntax_function *func = (struct syntax_function *)malloc(sizeof(struct syntax_function));
+	syntax_node_init(&func->n, SNT_FUNCTION);
+	func->name = strcopy(name);
+	return func;
 }
 
-void release_syntax_declaration(struct syntax_declaration *decl) {
-	syntax_node_release_children(&decl->n);
-	free(decl);
+void release_syntax_function(struct syntax_function *func) {
+	syntax_node_release_children(&func->n);
+	free(func->name);
+	free(func);
+}
+
+struct syntax_functioncall *create_syntax_functioncall() {
+	struct syntax_functioncall *fcall = (struct syntax_functioncall *)malloc(sizeof(struct syntax_functioncall));
+	syntax_node_init(&fcall->n, SNT_FUNCTIONCALL);
+	return fcall;
+}
+
+void release_syntax_functioncall(struct syntax_functioncall *fcall) {
+	syntax_node_release_children(&fcall->n);
+	free(fcall);
 }
 
 struct syntax_block *create_syntax_block() {
@@ -191,6 +271,17 @@ void release_syntax_block(struct syntax_block *block) {
 	free(block);	
 }
 
+struct syntax_statement *create_syntax_statement() {
+	struct syntax_statement *stmt = (struct syntax_statement *)malloc(sizeof(struct syntax_statement));
+	syntax_node_init(&stmt->n, SNT_STATEMENT);
+	return stmt;
+}
+
+void release_syntax_statement(struct syntax_statement *stmt) {
+	syntax_node_release_children(&stmt->n);
+	free(stmt);
+}
+
 struct syntax_expression *create_syntax_expression() {
 	struct syntax_expression *expr = (struct syntax_expression *)malloc(sizeof(struct syntax_expression));
 	syntax_node_init(&expr->n, SNT_EXPRESSION);
@@ -202,11 +293,10 @@ void release_syntax_expression(struct syntax_expression *expr) {
 	free(expr);	
 }
 
-struct syntax_variable *create_syntax_variable(const char *name, struct syntax_expression *expr) {
+struct syntax_variable *create_syntax_variable(const char *name) {
 	struct syntax_variable *var = (struct syntax_variable *)malloc(sizeof(struct syntax_variable));
 	syntax_node_init(&var->n, SNT_VARIABLE);
 	var->name = strcopy(name);
-	syntax_node_add_child(&var->n, &expr->n);
 	return var;
 }
 
@@ -216,15 +306,51 @@ void release_syntax_variable(struct syntax_variable *var) {
 	free(var);
 }
 
-struct syntax_comment *create_syntax_comment(const char *comment) {
-	struct syntax_comment *cmt = (struct syntax_comment *)malloc(sizeof(struct syntax_comment));
-	syntax_node_init(&cmt->n, SNT_COMMENT);
-	cmt->comment = strcopy(comment);
-	return cmt;
+struct syntax_argument *create_syntax_argument(const char *name) {
+	struct syntax_argument *arg = (struct syntax_argument *)malloc(sizeof(struct syntax_argument));
+	syntax_node_init(&arg->n, SNT_ARGUMENT);
+	arg->name = strcopy(name);
+	return arg;
 }
 
-void release_syntax_comment(struct syntax_comment *cmt) {
-	syntax_node_release_children(&cmt->n);
-	free(cmt->comment);
-	free(cmt);
+void release_syntax_argument(struct syntax_argument *arg) {
+	syntax_node_release_children(&arg->n);
+	free(arg->name);
+	free(arg);
 }
+
+struct syntax_table *create_syntax_table() {
+	struct syntax_table *table = (struct syntax_table *)malloc(sizeof(struct syntax_table));
+	syntax_node_init(&table->n, SNT_TABLE);
+	return table;
+}
+
+void release_syntax_table(struct syntax_table *table) {
+	syntax_node_release_children(&table->n);
+	free(table);
+}
+
+struct syntax_field *create_syntax_field(const char *name) {
+	struct syntax_field *field = (struct syntax_field *)malloc(sizeof(struct syntax_field));
+	syntax_node_init(&field->n, SNT_FIELD);
+	field->name = strcopy(name);
+	return field;
+}
+
+void release_syntax_field(struct syntax_field *field) {
+	syntax_node_release_children(&field->n);
+	free(field->name);
+	free(field);
+}
+
+struct syntax_return *create_syntax_return() {
+	struct syntax_return *ret = (struct syntax_return *)malloc(sizeof(struct syntax_return));
+	syntax_node_init(&ret->n, SNT_RETURN);
+	return ret;	
+}
+
+void release_syntax_return(struct syntax_return *ret) {
+	syntax_node_release_children(&ret->n);
+	free(ret);	
+}
+

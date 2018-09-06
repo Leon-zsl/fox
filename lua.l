@@ -21,6 +21,7 @@ extern char *yytext;
 [ \t]+					{ yylex_debug("blank"); }
 \r?\n					{ yylex_debug("newline"); yylineno++; }
 \r\n?					{ yylex_debug("newline"); yylineno++; }
+"--".*					{ yylex_debug("comment"); }
 
 "require"				{ yylex_debug("require"); return REQUIRE; }
 "function"				{ yylex_debug("function"); return FUNCTION; }
@@ -34,48 +35,31 @@ extern char *yytext;
 "else" 					{ yylex_debug("else"); return ELSE; }
 "elseif" 				{ yylex_debug("elseif"); return ELSEIF; }
 "while"					{ yylex_debug("while"); return WHILE; }
+"do"					{ yylex_debug("do"); return DO; }
 "repeat" 				{ yylex_debug("repeat"); return REPEAT; }
 "until" 			    { yylex_debug("until"); return UNTIL; }
 
 "and" 					{ yylex_debug("and"); return AND; }
 "or" 					{ yylex_debug("or"); return OR; }
 "not" 					{ yylex_debug("not"); return NOT; }
-">" 					{ yylex_debug(">"); return GREATER; }
 ">=" 					{ yylex_debug(">="); return GE; }
-"<" 					{ yylex_debug("<"); return LESS; }
 "<=" 					{ yylex_debug("<="); return LE; }
 "==" 					{ yylex_debug("=="); return EQ; }
 "~=" 					{ yylex_debug("~="); return NE; }
-
-"+"						{ yylex_debug("+"); return ADD; }
-"-" 					{ yylex_debug("-"); return SUB; }
-"*"						{ yylex_debug("*"); return MULTY; }
-"/"						{ yylex_debug("/"); return DIV; }
-"%"						{ yylex_debug("%"); return MOD; }
-".."					{ yylex_debug(".."); return CONCAT; }
-
-"=" 					{ yylex_debug("="); return ASSIGN; }
-"."						{ yylex_debug("."); return FIELD; }
-"("						{ yylex_debug("("); return LPARENTHESE; }
-")"						{ yylex_debug(")"); return RPARENTHESE; }
-"[" 					{ yylex_debug("["); return LBRACKET; }
-"]"						{ yylex_debug("]"); return RBRACKET; }
-","						{ yylex_debug(","); return COMMA; }
-":"						{ yylex_debug(":"); return COLON; }
-
-"--".*					{ yylex_debug("comment"); yylval.string = strcopy(yytext+2); return COMMENT; }
+"..."					{ yylex_debug("..."); return DOTS; }
+".."					{ yylex_debug(".."); return CONC; }
 
 [a-zA-Z_][a-zA-Z0-9_]* 	{ yylex_debug("name"); yylval.string = strcopy(yytext); return NAME; }
 
 \"[^\"]*\" 				{ yylex_debug("string"); yylval.string = strcopy(yytext); return STRING; }
 \'[^\']*\' 				{ yylex_debug("string"); yylval.string = strcopy(yytext); return STRING; }
 
--?[0-9]+("."[0-9]*)? | 
--?([0-9]+)?"."[0-9]+ |
--?[0-9]+("."[0-9]*)?[eE][+-]?[0-9]+ |
--?([0-9]+)?"."[0-9]+[eE][+-]?[0-9]+ { yylex_debug("number"); yylval.number = atof(yytext); return NUMBER; }
+[0-9]+("."[0-9]*)? | 
+([0-9]+)?"."[0-9]+ |
+[0-9]+("."[0-9]*)?[eE][+-]?[0-9]+ |
+([0-9]+)?"."[0-9]+[eE][+-]?[0-9]+ { yylex_debug("number"); yylval.number = atof(yytext); return NUMBER; }
 
-.						{ yylex_debug("unknown"); return *yytext; }
+.						{ yylex_debug("character"); return *yytext; }
 
 %%
 

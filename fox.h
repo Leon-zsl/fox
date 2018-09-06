@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <memory.h>
 #include <string.h>
+#include <assert.h>
 
 #define FOX_VERSION "0.0.1"
 
@@ -39,6 +40,7 @@
 #define FALSE 0
 #endif
 
+typedef int bool;
 typedef unsigned char byte;
 typedef unsigned short word;
 typedef unsigned int dword;
@@ -55,6 +57,10 @@ typedef unsigned int uint32;
 typedef unsigned long long uint64;
 */
 
+#ifndef ct_assert
+#define ct_assert(e) { enum { compile_time_assert_value = 1/ !!(e) } }
+#endif
+
 static inline char *strcopy(const char *s) {
 	if(s == NULL) return NULL;
 	size_t l = strlen(s);
@@ -62,6 +68,10 @@ static inline char *strcopy(const char *s) {
 	if(l == 0) ds[0] = '\0';
 	else strncpy(ds, s, l);
 	return ds;
+}
+
+static inline int strempty(const char *s) {
+	return s == NULL || strlen(s) == 0;
 }
 
 #endif
