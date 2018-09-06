@@ -40,6 +40,7 @@
 #define FALSE 0
 #endif
 
+typedef size_t l;
 typedef int bool;
 typedef unsigned char byte;
 typedef unsigned short word;

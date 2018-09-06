@@ -4,7 +4,7 @@
 #include "list.h"
 
 struct symbol {
-	struct node n;
+	struct lnode n;
 	char name[128];
 };
 
