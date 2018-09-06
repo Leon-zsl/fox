@@ -31,14 +31,14 @@ int main(int argc, char **argv) {
 
 	struct hmap m;
 	hmap_init(&m, 16);
-	printf("%d\n", hmap_insert(&m, HKEY_INT(0), HVALUE_INT(16)));
-	printf("%d\n", hmap_insert(&m, HKEY_STR("asd"), HVALUE_STR(18)));
-	printf("%d\n", hmap_insert(&m, HKEY_STR("12131"), HVALUE_STR(24)));
+	printf("%d\n", hmap_insert(&m, HKEY_INT(0), HVALUE(16)));
+	printf("%d\n", hmap_insert(&m, HKEY_STR("asd"), HVALUE(18)));
+	printf("%d\n", hmap_insert(&m, HKEY_STR("12131"), HVALUE(24)));
 
 	int a,b,c;
-	printf("%d\n", hmap_get(&m, HKEY_INT(0), (void **)&a));
-	printf("%d\n", hmap_get(&m, HKEY_STR("asd"), (void **)&b));
-	printf("%d\n", hmap_get(&m, HKEY_STR("12131"), (void **)&c));
+	printf("%d\n", hmap_get(&m, HKEY_INT(0), HVALUE_PTR(a)));
+	printf("%d\n", hmap_get(&m, HKEY_STR("asd"), HVALUE_PTR(b)));
+	printf("%d\n", hmap_get(&m, HKEY_STR("12131"), HVALUE_PTR(c)));
 
 	printf("a=%d,b=%d,c=%d\n", a,b,c);
 
@@ -48,9 +48,9 @@ int main(int argc, char **argv) {
 	printf("%d\n", hmap_remove(&m, HKEY_STR("asd"), NULL));
 	printf("%d\n", hmap_remove(&m, HKEY_STR("12131"), NULL));
 	
-	printf("%d\n", hmap_get(&m, HKEY_INT(0), (void **)&a));
-	printf("%d\n", hmap_get(&m, HKEY_STR("asd"), (void **)&b));
-	printf("%d\n", hmap_get(&m, HKEY_STR("12131"), (void **)&c));
+	printf("%d\n", hmap_get(&m, HKEY_INT(0), HVALUE_PTR(a)));
+	printf("%d\n", hmap_get(&m, HKEY_STR("asd"), HVALUE_PTR(b)));
+	printf("%d\n", hmap_get(&m, HKEY_STR("12131"), HVALUE_PTR(c)));
 
 	printf("a=%d,b=%d,c=%d\n", a,b,c);
 

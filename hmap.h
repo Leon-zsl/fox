@@ -7,8 +7,8 @@
 #define HKEY_INT(i) ((size_t)(i))
 #define HKEY_STR(s) (hash_string(s))
 
-#define HVALUE_INT(i) ((void*)(i))
-#define HVALUE_STR(s) ((void*)(s))
+#define HVALUE(v) ((void*)(v))
+#define HVALUE_PTR(p) ((void**)&(p))
 
 static inline size_t hash_string(const char *s) {
 	if(!s) return 0;
