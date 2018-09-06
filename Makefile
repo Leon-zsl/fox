@@ -50,4 +50,7 @@ test: test.c
 test_clean:
 	rm -rf test.o test
 
+tmp_clean:
+	rm -rf *.o
+
 .PHONY: all clean lua test test_clean
