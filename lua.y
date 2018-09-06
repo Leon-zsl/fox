@@ -171,7 +171,11 @@ block:			/* empty */
 				}
 		;
 
-ret:			RETURN expression
+ret:			RETURN
+				{
+					$$ = create_syntax_return();
+				}
+		|		RETURN expression
 				{
 					$$ = create_syntax_return();
 					syntax_node_push_child_tail(&($$->n), &($2->n));
