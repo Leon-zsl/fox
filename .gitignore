@@ -6,6 +6,8 @@ core.[0-9]*
 lua_l.c
 lua_y.c
 lua_y.h
+lua_y.output
+
 fox
 test
 

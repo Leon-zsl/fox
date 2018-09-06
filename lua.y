@@ -21,27 +21,11 @@ extern char *yytext;
 #define yyinfo(msg) log_info("%s:%d, %s at %s \n", yyfilename, yylineno, (msg), yytext)
 
 #define YYDEBUG 1
-
 #if YYDEBUG
 int yydebug = 1;
+typedef union YYSTYPE YYSTYPE;
+void yyprint(FILE *file, int type, YYSTYPE value);
 #define YYPRINT(file, type, value)   yyprint(file, type, value)
-static void yyprint(FILE *file, int type, YYSTYPE value)
-{
-	switch(type) {
-	case NUMBER:
-		fprintf(file, "[YACC]%s,%s\n", "number", value.number);
-		break;
-	case STRING:
-		fprintf(file, "[YACC]%s,%s\n", "string", value.string);
-		break;
-	case NAME:
-		fprintf(file, "[YACC]%s,%s", "name", value.string);
-		break;
-	default:
-		fprintf(file, "[YACC]%d,%p", type, value.chunk);
-		break;
-	}
-}
 #endif
 
 %}
@@ -575,3 +559,23 @@ void yyerror(const char *msg) {
 	log_error("%s:%d, %s at %s \n", yyfilename, yylineno, msg, yytext);
 }
 */
+
+#if YYDEBUG
+void yyprint(FILE *file, int type, YYSTYPE value)
+{
+	switch(type) {
+	case NUMBER:
+		fprintf(file, "[YACC]%s, %f\n", "number", value.number);
+		break;
+	case STRING:
+		fprintf(file, "[YACC]%s, %s\n", "string", value.string);
+		break;
+	case NAME:
+		fprintf(file, "[YACC]%s, %s\n", "name", value.string);
+		break;
+	default:
+		fprintf(file, "[YACC]%d, %p\n", type, value.chunk);
+		break;
+	}
+}
+#endif
