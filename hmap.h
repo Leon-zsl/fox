@@ -61,7 +61,7 @@ static inline int hmap_get(struct hmap *m, size_t key, void **value) {
 }
 
 static inline int hmap_insert(struct hmap *m, size_t key, void *value) {
-	if(!hmap_get(m, key, NULL)) return 0;
+	if(hmap_get(m, key, NULL)) return 0;
 
 	struct hnode *n = &m->bucket[key % m->bsize];
 	while(n->next) { n = n->next; }
