@@ -39,7 +39,7 @@ $(TARGET): $(OBJS)
 	$(CC) -c $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
 
 lua_y.c: lua.y
-	$(YACC) -d -o $@ $<
+	$(YACC) -d -v -o $@ $<
 
 lua_l.c: lua.l
 	$(LEX) -o $@ $<

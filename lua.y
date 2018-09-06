@@ -20,6 +20,30 @@ extern char *yytext;
 #define yywarn(msg) log_warn("%s:%d, %s at %s \n", yyfilename, yylineno, (msg), yytext)
 #define yyinfo(msg) log_info("%s:%d, %s at %s \n", yyfilename, yylineno, (msg), yytext)
 
+#define YYDEBUG 1
+
+#if YYDEBUG
+int yydebug = 1;
+#define YYPRINT(file, type, value)   yyprint(file, type, value)
+static void yyprint(FILE *file, int type, YYSTYPE value)
+{
+	switch(type) {
+	case NUMBER:
+		fprintf(file, "[YACC]%s,%s\n", "number", value.number);
+		break;
+	case STRING:
+		fprintf(file, "[YACC]%s,%s\n", "string", value.string);
+		break;
+	case NAME:
+		fprintf(file, "[YACC]%s,%s", "name", value.string);
+		break;
+	default:
+		fprintf(file, "[YACC]%d,%p", type, value.chunk);
+		break;
+	}
+}
+#endif
+
 %}
 
 %union {
