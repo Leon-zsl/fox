@@ -47,6 +47,12 @@ int main(int argc, char **argv) {
 	printf("%d\n", hmap_remove(&m, HKEY_INT(0), NULL));
 	printf("%d\n", hmap_remove(&m, HKEY_STR("asd"), NULL));
 	printf("%d\n", hmap_remove(&m, HKEY_STR("12131"), NULL));
+	
+	printf("%d\n", hmap_get(&m, HKEY_INT(0), (void **)&a));
+	printf("%d\n", hmap_get(&m, HKEY_STR("asd"), (void **)&b));
+	printf("%d\n", hmap_get(&m, HKEY_STR("12131"), (void **)&c));
+
+	printf("a=%d,b=%d,c=%d\n", a,b,c);
 
 	hmap_foreach(&m, handle_hmap);	
 	

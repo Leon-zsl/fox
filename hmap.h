@@ -61,16 +61,18 @@ static inline int hmap_get(struct hmap *m, size_t key, void **value) {
 }
 
 static inline int hmap_insert(struct hmap *m, size_t key, void *value) {
-	if(hmap_get(m, key, NULL)) return 0;
-
 	struct hnode *n = &m->bucket[key % m->bsize];
-	while(n->next) { n = n->next; }
+	while(n->next) {
+		if(n->next->key == key) {
+			return 0;
+		}
+		n = n->next;
+	}
 	
 	struct hnode *c = (struct hnode *)malloc(sizeof(struct hnode));
 	c->next = NULL;
 	c->key = key;
 	c->value = value;
-
 	n->next = c;
 	m->count++;
 	return 1;
@@ -87,15 +89,15 @@ static inline int hmap_remove(struct hmap *m, size_t key, void **value) {
 			break;
 		}
 		p = n;
-		n = n->next;
+		n = p->next;
 	}
 	//not found
-	if(!p->next) {
+	if(!n) {
 		return 0;
 	}
-	free(p->next);
-	p->next = NULL;
+	p->next = n->next;
 	m->count--;
+	free(n);
 	return 1;
 }
 
