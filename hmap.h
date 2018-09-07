@@ -6,6 +6,7 @@
 
 #define HKEY_INT(i) ((size_t)(i))
 #define HKEY_STR(s) (hash_string(s))
+#define HKEY_PTR(p) ((size_t)(p))
 
 #define HVALUE(v) ((void*)(v))
 #define HVALUE_PTR(p) ((void**)&(p))
