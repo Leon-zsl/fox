@@ -111,7 +111,7 @@ void syntax_node_push_sibling_tail(struct syntax_node *p, struct syntax_node *c)
 }
 
 int syntax_node_depth(struct syntax_node *n) {
-	size_t d = 1;
+	size_t d = 0;
 	struct syntax_node *p = n->parent;
 	while(p) {
 		d++;
