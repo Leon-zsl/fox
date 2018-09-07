@@ -9,17 +9,6 @@ extern char yyfilename[];
 extern int yylineno;
 extern char *yytext;
 
-#define YYPARSE_DEBUG 1
-#if YYPARSE_DEBUG
-#define yyparse_debug(msg) log_info("%s:%d, %s at %s \n", yyfilename, yylineno, (msg), yytext)
-#else
-#define yyparse_debug(msg)
-#endif
-
-#define yyerror(msg) log_error("%s:%d, %s at %s \n", yyfilename, yylineno, (msg), yytext)
-#define yywarn(msg) log_warn("%s:%d, %s at %s \n", yyfilename, yylineno, (msg), yytext)
-#define yyinfo(msg) log_info("%s:%d, %s at %s \n", yyfilename, yylineno, (msg), yytext)
-
 #define YYDEBUG 1
 #if YYDEBUG
 int yydebug = 1;
@@ -28,6 +17,8 @@ void yyprint(FILE *file, int type, YYSTYPE value);
 #define YYPRINT(file, type, value)   yyprint(file, type, value)
 #endif
 
+#define yyinfo(msg) log_info("%s:%d, %s\n", yyfilename, yylineno, (msg))
+#define yyerror(msg) log_error("%s:%d, %s\n", yyfilename, yylineno, (msg))
 %}
 
 %union {
@@ -158,6 +149,11 @@ block:			/* empty */
 				{
 					$$ = create_syntax_block();
 				}
+		|		ret
+				{
+					$$ = create_syntax_block();
+					syntax_node_push_child_tail(&($$->n), &($1->n));					
+				}
 		|		statement_list
 				{
 					$$ = create_syntax_block();
@@ -175,7 +171,7 @@ ret:			RETURN
 				{
 					$$ = create_syntax_return();
 				}
-		|		RETURN expression
+		|		RETURN expression_list
 				{
 					$$ = create_syntax_return();
 					syntax_node_push_child_tail(&($$->n), &($2->n));
@@ -569,16 +565,16 @@ void yyprint(FILE *file, int type, YYSTYPE value)
 {
 	switch(type) {
 	case NUMBER:
-		fprintf(file, "[YACC]%s, %f\n", "number", value.number);
+		fprintf(file, "\n[YACC]%s, %f\n", "number", value.number);
 		break;
 	case STRING:
-		fprintf(file, "[YACC]%s, %s\n", "string", value.string);
+		fprintf(file, "\n[YACC]%s, %s\n", "string", value.string);
 		break;
 	case NAME:
-		fprintf(file, "[YACC]%s, %s\n", "name", value.string);
+		fprintf(file, "\n[YACC]%s, %s\n", "name", value.string);
 		break;
 	default:
-		fprintf(file, "[YACC]%d, %p\n", type, value.chunk);
+		fprintf(file, "\n[YACC]%s, %d\n", "token", type);
 		break;
 	}
 }
