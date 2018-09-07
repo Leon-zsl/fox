@@ -71,9 +71,9 @@ int process(const char *srcpath, const char *destpath) {
 		log_info("translate file:%s", destpath);
 		int val = translate(destpath, tree);
 		syntax_tree_release(tree);
-		if(val) {
+		if(!val) {
 			log_error("translate file failed:%s", destpath);
-			return val;
+			return -1;
 		}
 	} else if(S_ISDIR(st.st_mode)) {
 		DIR *dir = opendir(srcpath);

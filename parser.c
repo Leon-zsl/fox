@@ -72,7 +72,7 @@ void syntax_node_push_child_head(struct syntax_node *p, struct syntax_node *c) {
 void syntax_node_push_child_tail(struct syntax_node *p, struct syntax_node *c) {
 	struct syntax_node *cc = p->children;
 	struct syntax_node *pc = NULL;
-	while(cc != NULL) {
+	while(cc) {
 		pc = cc;
 		cc = cc->next;
 	}
@@ -93,7 +93,7 @@ void syntax_node_push_sibling_head(struct syntax_node *p, struct syntax_node *c)
 void syntax_node_push_sibling_tail(struct syntax_node *p, struct syntax_node *c) {
 	struct syntax_node *cc = p->next;
 	struct syntax_node *pc = NULL;
-	while(cc != NULL) {
+	while(cc) {
 		pc = cc;
 		cc = cc->next;
 	}
@@ -137,7 +137,7 @@ int syntax_node_sibling_count(struct syntax_node *n) {
 void syntax_node_walk(struct syntax_node *n, syntax_node_handler h) {
 	h(n);
 	struct syntax_node *c = n->children;
-	while(c != NULL) {
+	while(c) {
 		h(c);
 		c = c->next;
 	}
@@ -145,7 +145,7 @@ void syntax_node_walk(struct syntax_node *n, syntax_node_handler h) {
 
 static void syntax_node_release_children(struct syntax_node *n) {
 	struct syntax_node *c = n->children;
-	while(c != NULL) {
+	while(c) {
 		struct syntax_node *cc = c;
 		c = c->next;
 		syntax_node_release(cc);
@@ -194,6 +194,7 @@ void syntax_node_release(struct syntax_node *n) {
 		release_syntax_return((struct syntax_return *)n);
 		break;
 	default:
+		log_warn("unknown syntax node type to release:%d", n->type);
 		syntax_node_release_children(n);
 		free(n);
 		break;
