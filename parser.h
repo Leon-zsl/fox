@@ -25,11 +25,14 @@ struct syntax_tree {
 	struct syntax_node *root;
 };
 
-extern struct syntax_tree *parse_tree;
-struct syntax_tree *parse(const char *filename);
 struct syntax_tree *syntax_tree_create();
 void syntax_tree_release(struct syntax_tree *t);
 void syntax_tree_walk(struct syntax_tree *t, syntax_node_handler h);
+
+extern struct syntax_tree *parse_tree;
+extern struct symbol_table *parse_table;
+
+int parse(const char *filename, struct syntax_tree **tree, struct symbol_table **table);
 
 enum syntax_node_type {
 	SNT_PROGRAM,

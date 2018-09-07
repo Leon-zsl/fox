@@ -62,15 +62,18 @@ int process(const char *srcpath, const char *destpath) {
 		}
 
 		log_info("parse file:%s", srcpath);
-		struct syntax_tree *tree = parse(srcpath);
-		if(!tree) {
+		struct syntax_tree *tree = NULL;
+		struct symbol_table *table = NULL;
+		int val = parse(srcpath, &tree, &table);
+		if(!val) {
 			log_error("parse file failed:%s", srcpath);
 			return -1;
 		}
 
 		log_info("translate file:%s", destpath);
-		int val = translate(destpath, tree);
+		val = translate(destpath, tree, table);
 		syntax_tree_release(tree);
+		symbol_table_release(table);
 		if(!val) {
 			log_error("translate file failed:%s", destpath);
 			return -1;

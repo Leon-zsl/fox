@@ -45,10 +45,10 @@ extern char *yytext;
 "..."					return DOTS;
 ".."					return CONC;
 
-[a-zA-Z_][a-zA-Z0-9_]* 	{ yylval.string = strcopy(yytext); return NAME; }
+[a-zA-Z_][a-zA-Z0-9_]* 	{ yylval.string = strdup(yytext); return NAME; }
 
-\"[^\"]*\" 				{ yylval.string = strcopy(yytext); return STRING; }
-\'[^\']*\' 				{ yylval.string = strcopy(yytext); return STRING; }
+\"[^\"]*\" 				{ yylval.string = strdup(yytext); return STRING; }
+\'[^\']*\' 				{ yylval.string = strdup(yytext); return STRING; }
 
 [0-9]+("."[0-9]*)? | 
 ([0-9]+)?"."[0-9]+ |

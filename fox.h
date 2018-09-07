@@ -62,7 +62,7 @@ typedef unsigned long long uint64;
 #define ct_assert(e) { enum { compile_time_assert_value = 1/ !!(e) } }
 #endif
 
-static inline char *strcopy(const char *s) {
+static inline char *strdup(const char *s) {
 	if(s == NULL) return NULL;
 	size_t l = strlen(s);
 	char *ds = malloc(l+1);

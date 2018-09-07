@@ -73,20 +73,15 @@ void yyprint(FILE *file, int type, YYSTYPE value);
 program:		/*empty*/
 				{
 					yyinfo("empty program!");
-					struct syntax_tree *t = syntax_tree_create();
 					struct syntax_program *p = create_syntax_program();
-					t->root = (struct syntax_node *)p;
-					parse_tree = t;					
+					parse_tree->root = &p->n;
 				}
 		|		chunk_list
 				{
 					yyinfo("reduced to program!");
-					struct syntax_tree *t = syntax_tree_create();
 					struct syntax_program *p = create_syntax_program();
-					struct syntax_node *c = (struct syntax_node *)($1);
-					syntax_node_push_child_head(&p->n, c);
-					t->root = (struct syntax_node *)p;
-					parse_tree = t;
+					syntax_node_push_child_head(&p->n, &($1->n));
+					parse_tree->root = &p->n;
 				}
 		;
 
@@ -124,7 +119,7 @@ chunk:			requirement
 				}
 		;
 
-requirement:	REQUIRE '(' NAME ')'
+requirement:	REQUIRE '(' STRING ')'
 				{
 					$$ = create_syntax_requirement($3);
 				}
@@ -132,6 +127,8 @@ requirement:	REQUIRE '(' NAME ')'
 
 function:		FUNCTION NAME '(' argument_list ')' block END
 				{
+					symbol_table_insert(parse_table, symbol_create($2));
+					
 					struct syntax_function *func = create_syntax_function($2);
 					syntax_node_push_child_tail(&func->n, &($4->n));
 					syntax_node_push_child_tail(&func->n, &($6->n));
@@ -139,6 +136,8 @@ function:		FUNCTION NAME '(' argument_list ')' block END
 				}
 		|		FUNCTION NAME '(' ')' block END
 				{
+					symbol_table_insert(parse_table, symbol_create($2));
+					
 					struct syntax_function *func = create_syntax_function($2);
 					syntax_node_push_child_tail(&func->n, &($5->n));
 					$$ = func;
@@ -291,7 +290,7 @@ expression:		NIL
 				{
 					struct syntax_expression *expr = create_syntax_expression();
 					expr->tag = EXPR_STRING;
-					expr->value.string = strcopy($1);
+					expr->value.string = strdup($1);
 					$$ = expr;
 				}
 		|		table
@@ -487,6 +486,8 @@ field_list:		field
 
 field:			NAME '=' expression
 				{
+					symbol_table_insert(parse_table, symbol_create($1));
+					
 					$$ = create_syntax_field($1);
 					syntax_node_push_child_tail(&($$->n), &($3->n));
 				}
@@ -510,6 +511,8 @@ variable_list:	variable
 
 variable:		NAME
 				{
+					symbol_table_insert(parse_table, symbol_create($1));
+					
 					struct syntax_variable *var = create_syntax_variable($1);
 					var->tag = VAR_NORMAL;
 					$$ = var;
@@ -524,6 +527,8 @@ variable:		NAME
 				}
 		|		variable '.' NAME
 				{
+					symbol_table_insert(parse_table, symbol_create($3));
+					
 					struct syntax_variable *var = create_syntax_variable($3);
 					var->tag = VAR_KEY;
 					syntax_node_push_child_tail(&var->n, &($1->n));
@@ -544,6 +549,7 @@ argument_list:	argument
 
 argument:		NAME
 				{
+					symbol_table_insert(parse_table, symbol_create($1));
 					$$ = create_syntax_argument($1);
 				}
 		|		DOTS

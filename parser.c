@@ -13,12 +13,13 @@ void yyset_lineno(int lineno);
 void yyset_filename(const char *name);
 
 struct syntax_tree *parse_tree = NULL;
+struct symbol_table *parse_table = NULL;
 
-struct syntax_tree *parse(const char *filename) {
+int parse(const char *filename, struct syntax_tree **tree, struct symbol_table **table) {
 	FILE *fp = fopen(filename, "rb");
 	if(!fp) {
 		log_error("open file failed %s", filename);
-		return NULL;
+		return 0;
 	}
 
 	yyset_in(fp);
@@ -29,14 +30,20 @@ struct syntax_tree *parse(const char *filename) {
 	/* yylex function test */
 	/* while(yylex() != YY_NULL); */
 
-	//a new parse tree
-	parse_tree = NULL;	
+	parse_tree = syntax_tree_create();
+	parse_table = symbol_table_create();
 	if(yyparse()) {
 		log_error("yyparse failed:%s", filename);
+		syntax_tree_release(parse_tree);
+		symbol_table_release(parse_table);
+		fclose(fp);
+		return 0;
 	}
 
 	fclose(fp);
-	return parse_tree;
+	*tree = parse_tree;
+	*table = parse_table;
+	return 1;
 }
 
 struct syntax_tree *syntax_tree_create() {
@@ -240,7 +247,7 @@ void release_syntax_chunk(struct syntax_chunk *chunk) {
 struct syntax_requirement *create_syntax_requirement(const char *name) {
 	struct syntax_requirement *req = (struct syntax_requirement *)malloc(sizeof(struct syntax_requirement));
 	syntax_node_init(&req->n, SNT_REQUIREMENT);
-	req->name = strcopy(name);
+	req->name = strdup(name);
 	return req;
 }
 
@@ -253,7 +260,7 @@ void release_syntax_requirement(struct syntax_requirement *req) {
 struct syntax_function *create_syntax_function(const char *name) {
 	struct syntax_function *func = (struct syntax_function *)malloc(sizeof(struct syntax_function));
 	syntax_node_init(&func->n, SNT_FUNCTION);
-	func->name = strcopy(name);
+	func->name = strdup(name);
 	return func;
 }
 
@@ -310,7 +317,7 @@ void release_syntax_expression(struct syntax_expression *expr) {
 struct syntax_variable *create_syntax_variable(const char *name) {
 	struct syntax_variable *var = (struct syntax_variable *)malloc(sizeof(struct syntax_variable));
 	syntax_node_init(&var->n, SNT_VARIABLE);
-	var->name = strcopy(name);
+	var->name = strdup(name);
 	return var;
 }
 
@@ -323,7 +330,7 @@ void release_syntax_variable(struct syntax_variable *var) {
 struct syntax_argument *create_syntax_argument(const char *name) {
 	struct syntax_argument *arg = (struct syntax_argument *)malloc(sizeof(struct syntax_argument));
 	syntax_node_init(&arg->n, SNT_ARGUMENT);
-	arg->name = strcopy(name);
+	arg->name = strdup(name);
 	return arg;
 }
 
@@ -347,7 +354,7 @@ void release_syntax_table(struct syntax_table *table) {
 struct syntax_field *create_syntax_field(const char *name) {
 	struct syntax_field *field = (struct syntax_field *)malloc(sizeof(struct syntax_field));
 	syntax_node_init(&field->n, SNT_FIELD);
-	field->name = strcopy(name);
+	field->name = strdup(name);
 	return field;
 }
 

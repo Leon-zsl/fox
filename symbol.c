@@ -7,7 +7,7 @@ static void clear_handler(size_t key, void *value) {
 
 struct symbol *symbol_create(const char *name) {
 	struct symbol *s = (struct symbol *)malloc(sizeof(struct symbol));
-	strcpy(s->name, name);
+	s->name = strdup(name);
 	return s;
 }
 
