@@ -13,77 +13,93 @@ int trans_syntax_node_children(FILE *file, struct syntax_node *n) {
 }
 
 int trans_syntax_program(FILE *file, struct syntax_program *program) {
-	log_info("trans program");
+	log_info("trans program, children count:%d",
+			 syntax_node_children_count((struct syntax_node *)program));
 	return trans_syntax_node_children(file, (struct syntax_node *)program);
 }
 
 int trans_syntax_chunk(FILE *file, struct syntax_chunk *chunk) {
-	log_info("trans chunk");
+	log_info("trans chunk, children count:%d",
+			 syntax_node_children_count((struct syntax_node *)chunk));
 	return trans_syntax_node_children(file, (struct syntax_node *)chunk);
 }
 
 int trans_syntax_requirement(FILE *file, struct syntax_requirement *req) {
-	log_info("trans requirement, name:%s", req->name);
+	log_info("trans requirement, children count:%d, name:%s",
+			 syntax_node_children_count((struct syntax_node *)req), req->name);
 	return trans_syntax_node_children(file, (struct syntax_node *)req);
 }
 
 int trans_syntax_function(FILE *file, struct syntax_function *func) {
-	log_info("trans function, name:%s", func->name);
+	log_info("trans function, children count: %d, name:%s",
+			 syntax_node_children_count((struct syntax_node *)func), func->name);
 	return trans_syntax_node_children(file, (struct syntax_node *)func);
 }
 
 int trans_syntax_functioncall(FILE *file, struct syntax_functioncall *fcall) {
-	log_info("trans functioncall");
+	log_info("trans functioncall, children count:%d",
+			 syntax_node_children_count((struct syntax_node *)fcall));
 	return trans_syntax_node_children(file, (struct syntax_node *)fcall);
 }
 
 int trans_syntax_block(FILE *file, struct syntax_block *block) {
-	log_info("trans block");
+	log_info("trans block, children count:%d",
+			 syntax_node_children_count((struct syntax_node *)block));
 	return trans_syntax_node_children(file, (struct syntax_node *)block);
 }
 
 int trans_syntax_statement(FILE *file, struct syntax_statement *stmt) {
-	log_info("trans statement, tag:%d", stmt->tag);
+	log_info("trans statement, children count:%d, tag:%d",
+			 syntax_node_children_count((struct syntax_node *)stmt), stmt->tag);
 	return trans_syntax_node_children(file, (struct syntax_node *)stmt);
 }
 
 int trans_syntax_expression(FILE *file, struct syntax_expression *expr) {
 	if(expr->tag == EXPR_NUMBER) {
-		log_info("trans expression, tag:%d, number:%f", expr->tag, expr->value.number);
+		log_info("trans expression, children count:%d, tag:%d, number:%f",
+				 syntax_node_children_count((struct syntax_node *)expr), expr->tag, expr->value.number);
 	} else if(expr->tag == EXPR_STRING) {
-		log_info("trans expression, tag:%d, string:%s", expr->tag, expr->value.string);
+		log_info("trans expression, children count:%d, tag:%d, string:%s",
+				 syntax_node_children_count((struct syntax_node *)expr), expr->tag, expr->value.string);
 	} else {
-		log_info("trans expression, tag:%d", expr->tag);
+		log_info("trans expression, children count:%d, tag:%d",
+				 syntax_node_children_count((struct syntax_node *)expr), expr->tag);
 	}
 	return trans_syntax_node_children(file, (struct syntax_node *)expr);
 }
 
 int trans_syntax_variable(FILE *file, struct syntax_variable *var) {
 	if(var->tag == VAR_NORMAL) {
-		log_info("trans variable, tag:%d, name:%s", var->tag, var->name);
+		log_info("trans variable, children count:%d, tag:%d, name:%s",
+				 syntax_node_children_count((struct syntax_node  *)var), var->tag, var->name);
 	} else {
-		log_info("trans variable, tag:%d", var->tag);
+		log_info("trans variable, children count:%d, tag:%d",
+				 syntax_node_children_count((struct syntax_node *)var), var->tag);
 	}
 	return trans_syntax_node_children(file, (struct syntax_node *)var);
 }
 
 int trans_syntax_argument(FILE *file, struct syntax_argument *arg) {
-	log_info("trans argument, name:%s", arg->name);
+	log_info("trans argument, children count:%d, name:%s",
+			 syntax_node_children_count((struct syntax_node *)arg), arg->name);
 	return trans_syntax_node_children(file, (struct syntax_node *)arg);
 }
 
 int trans_syntax_table(FILE *file, struct syntax_table *table) {
-	log_info("trans table");
+	log_info("trans table, children count:%d",
+			 syntax_node_children_count((struct syntax_node *)table));
 	return trans_syntax_node_children(file, (struct syntax_node *)table);
 }
 
 int trans_syntax_field(FILE *file, struct syntax_field *field) {
-	log_info("trans field, name:%s", field->name);
+	log_info("trans field, children count:%d, name:%s",
+			 syntax_node_children_count((struct syntax_node *)field), field->name);
 	return trans_syntax_node_children(file, (struct syntax_node *)field);
 }
 
 int trans_syntax_return(FILE *file, struct syntax_return *ret) {
-	log_info("trans return");
+	log_info("trans return, children count:%d",
+			 syntax_node_children_count((struct syntax_node *)ret));
 	return trans_syntax_node_children(file, (struct syntax_node *)ret);
 }
 
