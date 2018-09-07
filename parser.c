@@ -75,18 +75,18 @@ void syntax_node_push_child_head(struct syntax_node *p, struct syntax_node *c) {
 }
 
 void syntax_node_push_child_tail(struct syntax_node *p, struct syntax_node *c) {
-	struct syntax_node *cc = p->children;
-	struct syntax_node *pc = NULL;
+	if(!p->children) {
+		p->children = c;
+		return;
+	}
+
+	struct syntax_node *pc = p->children;
+	struct syntax_node *cc = pc->next;
 	while(cc) {
 		pc = cc;
 		cc = cc->next;
 	}
-	if(pc) {
-		pc->next = c;	
-	} else {
-		p->children = c;
-	}
-	c->parent = p;
+	pc->next = c;
 }
 
 void syntax_node_push_sibling_head(struct syntax_node *p, struct syntax_node *c) {
