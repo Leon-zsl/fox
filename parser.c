@@ -80,6 +80,7 @@ void syntax_node_push_child_tail(struct syntax_node *p, struct syntax_node *c) {
 	struct syntax_node *cc = c;
 	while(cc) {
 		cc->parent = p;
+		cc = cc->next;
 	}
 
 	if(!p->children) {
