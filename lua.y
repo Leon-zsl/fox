@@ -99,22 +99,19 @@ chunk_list:		chunk
 chunk:			requirement
 				{
 					struct syntax_chunk *chunk = create_syntax_chunk();
-					struct syntax_node *n = (struct syntax_node *)($1);
-					syntax_node_push_child_head(&chunk->n, n);
+					syntax_node_push_child_head(&chunk->n, &($1->n));
 					$$ = chunk;					
 				}
 		|		function
 				{
 					struct syntax_chunk *chunk = create_syntax_chunk();
-					struct syntax_node *n = (struct syntax_node *)($1);
-					syntax_node_push_child_head(&chunk->n, n);
+					syntax_node_push_child_head(&chunk->n, &($1->n));
 					$$ = chunk;
 				}
 		|		statement_list
 				{
 					struct syntax_chunk *chunk = create_syntax_chunk();
-					struct syntax_node *n = (struct syntax_node *)($1);
-					syntax_node_push_child_head(&chunk->n, n);
+					syntax_node_push_child_head(&chunk->n, &($1->n));
 					$$ = chunk;
 				}
 		;
@@ -297,9 +294,9 @@ expression:		NIL
 				{
 					struct syntax_expression *expr = create_syntax_expression();
 					expr->tag = EXPR_TABLE;
-					syntax_node_push_child_tail(&expr->n, &($1->n));					
-					$$ = expr;					
-				}				
+					syntax_node_push_child_tail(&expr->n, &($1->n));
+					$$ = expr;
+				}
 		|		variable
 				{
 					struct syntax_expression *expr = create_syntax_expression();
