@@ -5,7 +5,7 @@
 #include "hmap.h"
 
 struct symbol {
-	char *name;
+	char *name;	/* name must be unique for unique symbol */
 };
 
 struct symbol *symbol_create(const char *name);
