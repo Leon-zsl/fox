@@ -1,4 +1,6 @@
 #include "fox.h"
+#include "list.h"
+#include "hmap.h"
 #include "symbol.h"
 
 static void clear_handler(size_t key, void *value) {

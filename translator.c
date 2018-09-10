@@ -1,16 +1,56 @@
 #include "fox.h"
 #include "symbol.h"
 #include "syntax.h"
-#include "parser.h"
 #include "translator.h"
 
+int yylex(void);
+int yyparse(void);
+
+void yyset_in(FILE *in);
+void yyset_out(FILE *out);
+void yyset_lineno(int lineno);
+void yyset_filename(const char *name);
+
+extern struct syntax_tree *parse_tree;
+extern struct symbol_table *parse_table;
+
+int parse(const char *filename, struct syntax_tree **tree, struct symbol_table **table) {
+	FILE *fp = fopen(filename, "rb");
+	if(!fp) {
+		log_error("open file failed %s", filename);
+		return 0;
+	}
+
+	yyset_in(fp);
+	yyset_out(stdout);
+	yyset_filename(filename);
+	yyset_lineno(1);
+
+	parse_tree = syntax_tree_create();
+	parse_table = symbol_table_create();	
+	if(yyparse()) {
+		log_error("yyparse failed:%s", filename);
+		syntax_tree_release(parse_tree);
+		symbol_table_release(parse_table);
+		fclose(fp);
+		return 0;
+	}
+
+	fclose(fp);
+	*tree = parse_tree;
+	*table = parse_table;
+	return 1;
+}
+
 struct translator {
-	struct parser *parser;
-	char *filename;
+	struct syntax_tree *tree;
+	struct symbol_table *table;
 	FILE *fp;
 };
 
-static struct translator *translator_create(struct parser *p, const char *filename) {
+static struct translator *translator_create(struct syntax_tree *tree,
+											struct symbol_table *table,
+											const char *filename) {
 	FILE *fp = fopen(filename, "wb");
 	if(!fp) {
 		log_error("open file failed %s", filename);
@@ -18,8 +58,8 @@ static struct translator *translator_create(struct parser *p, const char *filena
 	}
 
 	struct translator *t = (struct translator *)malloc(sizeof(struct translator));
-	t->parser = p;
-	t->filename = strdup(filename);
+	t->tree = tree;
+	t->table = table;
 	t->fp = fp;
 	return t;
 }
@@ -28,11 +68,34 @@ static void translator_release(struct translator *t) {
 	if(!t) return;
 
 	fclose(t->fp);
-	free(t->filename);
 	free(t);
 }
 
 static int translate_syntax_node(struct translator *t, struct syntax_node *n);
+
+int translate(struct syntax_tree *tree, struct symbol_table *table, const char *filename) {
+	if(!tree || !tree->root || !table) {
+		log_error("syntax tree or symbol table is invalid");
+		return 0;
+	}
+
+	if(tree->root->type != SNT_PROGRAM) {
+		log_error("syntax tree root is not program");
+		return 0;
+	}	
+
+	struct translator *t = translator_create(tree, table, filename);
+	if(!t) {
+		log_error("create translator failed");
+		return 0;
+	}
+
+	int val = translate_syntax_node(t, tree->root);
+	
+	translator_release(t);
+	return val;
+}
+
 static int trans_syntax_node_children(struct translator *t, struct syntax_node *n) {
 	struct syntax_node *c = n->children;
 	while(c) {
@@ -211,25 +274,3 @@ static int translate_syntax_node(struct translator *t, struct syntax_node *n) {
 	return val;
 }
 
-int translate(struct parser *p, const char *filename) {
-	if(!p || !p->tree || !p->tree->root || !p->table) {
-		log_error("syntax tree is invalid");
-		return 0;
-	}
-
-	if(p->tree->root->type != SNT_PROGRAM) {
-		log_error("syntax tree root is not program");
-		return 0;
-	}	
-
-	struct translator *t = translator_create(p, filename);
-	if(!t) {
-		log_error("create translator failed");
-		return 0;
-	}
-
-	int val = translate_syntax_node(t, p->tree->root);
-	
-	translator_release(t);
-	return val;
-}

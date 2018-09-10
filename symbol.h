@@ -1,9 +1,6 @@
 #ifndef __SYMBOL_H__
 #define __SYMBOL_H__
 
-#include "list.h"
-#include "hmap.h"
-
 struct symbol {
 	char *name;	/* name must be unique for unique symbol */
 };

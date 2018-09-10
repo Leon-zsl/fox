@@ -7,7 +7,6 @@
 #include "fox.h"
 #include "symbol.h"
 #include "syntax.h"
-#include "parser.h"
 #include "translator.h"
 
 int ensure_path(const char *srcpath, const char *destpath) {
@@ -63,15 +62,18 @@ int process(const char *srcpath, const char *destpath) {
 		}
 
 		log_info("parse file:%s", srcpath);
-		struct parser *parser = parse(srcpath);
-		if(!parser) {
+		struct syntax_tree *tree = NULL;
+		struct symbol_table *table = NULL;
+		int val = parse(srcpath, &tree, &table);
+		if(!val) {
 			log_error("parse file failed:%s", srcpath);
 			return -1;
 		}
 
 		log_info("translate file:%s", destpath);
-		int val = translate(parser, destpath);
-		parser_release(parser);
+		val = translate(tree, table, destpath);
+		syntax_tree_release(tree);
+		symbol_table_release(table);
 		if(!val) {
 			log_error("translate file failed:%s", destpath);
 			return -1;
