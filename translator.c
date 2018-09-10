@@ -1,6 +1,6 @@
 #include "fox.h"
 #include "symbol.h"
-#include "parser.h"
+#include "syntax.h"
 #include "translator.h"
 
 static int trans_syntax_node_children(FILE *file, struct syntax_node *n, struct symbol_table *t) {

@@ -45,3 +45,12 @@ struct symbol *symbol_table_get(struct symbol_table *t, const char *name) {
 	hmap_get(t->m, HKEY_STR(name), HVALUE_PTR(s));
 	return s;
 }
+
+struct symbol *symbol_table_set(struct symbol_table *t, struct symbol *s) {
+	if(!s || !s->name) return NULL;
+	struct symbol *ps = NULL;
+	int key = HKEY_STR(s->name);
+	hmap_remove(t->m, key, HVALUE_PTR(ps));
+	hmap_insert(t->m, key, s);
+	return ps;
+}

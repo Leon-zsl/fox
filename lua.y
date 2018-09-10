@@ -1,7 +1,7 @@
 %{
 #include "fox.h"
 #include "symbol.h"
-#include "parser.h"
+#include "syntax.h"
 
 int yylex(void);
 
@@ -19,6 +19,10 @@ void yyprint(FILE *file, int type, YYSTYPE value);
 
 #define yyinfo(msg) log_info("%s:%d, %s\n", yyfilename, yylineno, (msg))
 #define yyerror(msg) log_error("%s:%d, %s\n", yyfilename, yylineno, (msg))
+
+struct syntax_tree *parse_tree = NULL;
+struct symbol_table *parse_table = NULL;
+
 %}
 
 %union {
