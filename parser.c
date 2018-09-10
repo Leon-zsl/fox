@@ -16,11 +16,11 @@ void yyset_filename(const char *name);
 extern struct syntax_tree *parse_tree;
 extern struct symbol_table *parse_table;
 
-int parse(const char *filename, struct syntax_tree **tree, struct symbol_table **table) {
+struct parser *parse(const char *filename) {
 	FILE *fp = fopen(filename, "rb");
 	if(!fp) {
 		log_error("open file failed %s", filename);
-		return 0;
+		return NULL;
 	}
 
 	yyset_in(fp);
@@ -37,11 +37,23 @@ int parse(const char *filename, struct syntax_tree **tree, struct symbol_table *
 		syntax_tree_release(parse_tree);
 		symbol_table_release(parse_table);
 		fclose(fp);
-		return 0;
+		return NULL;
 	}
 
 	fclose(fp);
-	*tree = parse_tree;
-	*table = parse_table;
-	return 1;
+
+	struct parser *p = (struct parser *)malloc(sizeof(struct parser));
+	p->filename = strdup(filename);
+	p->tree = parse_tree;
+	p->table = parse_table;
+	return p;
+}
+
+void parser_release(struct parser *p) {
+	if(!p) return;
+
+	free(p->filename);
+	syntax_tree_release(p->tree);
+	symbol_table_release(p->table);
+	free(p);
 }

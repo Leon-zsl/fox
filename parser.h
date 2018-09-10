@@ -1,9 +1,13 @@
 #ifndef __PARSER_H__
 #define __PARSER_H__
 
-extern struct syntax_tree *parse_tree;
-extern struct symbol_table *parse_table;
+struct parser {
+	char *filename;
+	struct syntax_tree *tree;
+	struct symbol_table *table;
+};
 
-int parse(const char *filename, struct syntax_tree **tree, struct symbol_table **table);
+struct parser *parse(const char *filename);
+void parser_release(struct parser *p);
 
 #endif
