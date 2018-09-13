@@ -129,45 +129,46 @@ static void syntax_node_release_children(struct syntax_node *n) {
 }
 
 void syntax_node_release(struct syntax_node *n) {
+	void *node = n;
 	switch(n->type) {
 	case SNT_PROGRAM:
-		release_syntax_program((struct syntax_program *)n);
+		release_syntax_program(node);
 		break;
 	case SNT_CHUNK:
-		release_syntax_chunk((struct syntax_chunk *)n);
+		release_syntax_chunk(node);
 		break;
 	case SNT_REQUIREMENT:
-		release_syntax_requirement((struct syntax_requirement *)n);
+		release_syntax_requirement(node);
 		break;
 	case SNT_FUNCTION:
-		release_syntax_function((struct syntax_function *)n);
+		release_syntax_function(node);
 		break;
 	case SNT_FUNCTIONCALL:
-		release_syntax_functioncall((struct syntax_functioncall *)n);
+		release_syntax_functioncall(node);
 		break;
 	case SNT_BLOCK:
-		release_syntax_block((struct syntax_block *)n);
+		release_syntax_block(node);
 		break;
 	case SNT_STATEMENT:
-		release_syntax_statement((struct syntax_statement *)n);
+		release_syntax_statement(node);
 		break;
 	case SNT_EXPRESSION:
-		release_syntax_expression((struct syntax_expression *)n);
+		release_syntax_expression(node);
 		break;
 	case SNT_TABLE:
-		release_syntax_table((struct syntax_table *)n);
+		release_syntax_table(node);
 		break;
 	case SNT_FIELD:
-		release_syntax_field((struct syntax_field *)n);
+		release_syntax_field(node);
 		break;
 	case SNT_VARIABLE:
-		release_syntax_variable((struct syntax_variable *)n);
+		release_syntax_variable(node);
 		break;
 	case SNT_ARGUMENT:
-		release_syntax_argument((struct syntax_argument *)n);
+		release_syntax_argument(node);
 		break;
 	case SNT_RETURN:
-		release_syntax_return((struct syntax_return *)n);
+		release_syntax_return(node);
 		break;
 	default:
 		log_warn("unknown syntax node type to release:%d", n->type);

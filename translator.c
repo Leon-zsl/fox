@@ -229,45 +229,46 @@ static int trans_syntax_return(struct translator *t, struct syntax_return *ret) 
 
 static int translate_syntax_node(struct translator *t, struct syntax_node *n) {
 	int val = 0;
+	void *node = n;
 	switch(n->type) {
 	case SNT_PROGRAM:
-		val = trans_syntax_program(t, (struct syntax_program *)n);
+		val = trans_syntax_program(t, node);
 		break;
 	case SNT_CHUNK:
-		val = trans_syntax_chunk(t, (struct syntax_chunk *)n);
+		val = trans_syntax_chunk(t, node);
 		break;
 	case SNT_REQUIREMENT:
-		val = trans_syntax_requirement(t, (struct syntax_requirement *)n);
+		val = trans_syntax_requirement(t, node);
 		break;
 	case SNT_FUNCTION:
-		val = trans_syntax_function(t, (struct syntax_function *)n);
+		val = trans_syntax_function(t, node);
 		break;
 	case SNT_FUNCTIONCALL:
-		val = trans_syntax_functioncall(t, (struct syntax_functioncall *)n);
+		val = trans_syntax_functioncall(t, node);
 		break;
 	case SNT_BLOCK:
-		val = trans_syntax_block(t, (struct syntax_block *)n);
+		val = trans_syntax_block(t, node);
 		break;
 	case SNT_STATEMENT:
-		val = trans_syntax_statement(t, (struct syntax_statement *)n);
+		val = trans_syntax_statement(t, node);
 		break;
 	case SNT_EXPRESSION:
-		val = trans_syntax_expression(t, (struct syntax_expression *)n);
+		val = trans_syntax_expression(t, node);
 		break;
 	case SNT_TABLE:
-		val = trans_syntax_table(t, (struct syntax_table *)n);
+		val = trans_syntax_table(t, node);
 		break;
 	case SNT_FIELD:
-		val = trans_syntax_field(t, (struct syntax_field *)n);
+		val = trans_syntax_field(t, node);
 		break;
 	case SNT_VARIABLE:
-		val = trans_syntax_variable(t, (struct syntax_variable *)n);
+		val = trans_syntax_variable(t, node);
 		break;
 	case SNT_ARGUMENT:
-		val = trans_syntax_argument(t, (struct syntax_argument *)n);
+		val = trans_syntax_argument(t, node);
 		break;
 	case SNT_RETURN:
-		val = trans_syntax_return(t, (struct syntax_return *)n);
+		val = trans_syntax_return(t, node);
 		break;
 	default:
 		log_error("unknown syntax node type to translate:%d", n->type);
