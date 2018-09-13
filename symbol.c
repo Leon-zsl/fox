@@ -8,7 +8,7 @@ static void clear_handler(size_t key, void *value) {
 }
 
 struct symbol *symbol_create(const char *name) {
-	struct symbol *s = (struct symbol *)malloc(sizeof(struct symbol));
+	struct symbol *s = malloc(sizeof(struct symbol));
 	s->name = strdup(name);
 	return s;
 }
@@ -19,8 +19,8 @@ void symbol_release(struct symbol *s) {
 }
 
 struct symbol_table *symbol_table_create() {
-	struct symbol_table *t = (struct symbol_table *)malloc(sizeof(struct symbol_table));
-	t->m = (struct hmap *)malloc(sizeof(struct hmap));
+	struct symbol_table *t = malloc(sizeof(struct symbol_table));
+	t->m = malloc(sizeof(struct hmap));
 	hmap_init(t->m, 256);
 	return t;
 }

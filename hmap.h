@@ -38,7 +38,7 @@ typedef void (*hmap_handler)(size_t key, void *value);
 
 static inline void hmap_init(struct hmap *m, size_t bsize) {
 	m->bsize = bsize;
-	m->bucket = (struct hnode *)malloc(sizeof(struct hnode) * bsize);
+	m->bucket = malloc(sizeof(struct hnode) * bsize);
 	memset(m->bucket, 0, sizeof(struct hnode) * bsize);
 	m->count = 0;	
 }
@@ -70,7 +70,7 @@ static inline int hmap_insert(struct hmap *m, size_t key, void *value) {
 		n = n->next;
 	}
 	
-	struct hnode *c = (struct hnode *)malloc(sizeof(struct hnode));
+	struct hnode *c = malloc(sizeof(struct hnode));
 	c->next = NULL;
 	c->key = key;
 	c->value = value;
