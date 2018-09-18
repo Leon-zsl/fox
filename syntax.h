@@ -30,32 +30,26 @@ void syntax_tree_release(struct syntax_tree *t);
 void syntax_tree_walk(struct syntax_tree *t, syntax_node_handler h);
 
 enum syntax_node_type {
-	SNT_PROGRAM,
 	SNT_CHUNK,
-	SNT_REQUIREMENT,
-	SNT_FUNCTION,
-	SNT_FUNCTIONCALL,	
 	SNT_BLOCK,
 	SNT_STATEMENT,
+	SNT_FUNCTION,
+	SNT_FUNCTIONCALL,
 	SNT_EXPRESSION,
 	SNT_TABLE,
 	SNT_FIELD,
 	SNT_VARIABLE,
+	SNT_PARAMETER,
 	SNT_ARGUMENT,
-	SNT_RETURN,
-};
-
-struct syntax_program {
-	struct syntax_node n;
+	SNT_OPERATOR,
 };
 
 struct syntax_chunk {
 	struct syntax_node n;
 };
 
-struct syntax_requirement {
+struct syntax_block {
 	struct syntax_node n;
-	char* name;
 };
 
 struct syntax_function {
@@ -67,11 +61,8 @@ struct syntax_functioncall {
 	struct syntax_node n;
 };
 
-struct syntax_block {
-	struct syntax_node n;
-};
-
 enum syntax_statement_tag {
+	STMT_RETURN,
 	STMT_IF,
 	STMT_ELSE_EMPTY,
 	STMT_ELSE,
@@ -87,6 +78,9 @@ enum syntax_statement_tag {
 struct syntax_statement {
 	struct syntax_node n;
 	int tag;
+	union {
+		
+	} stmt;
 };
 
 enum syntax_expression_tag {
@@ -145,6 +139,10 @@ struct syntax_variable {
 
 struct syntax_argument {
 	struct syntax_node n;
+};
+
+struct syntax_parameter {
+	struct syntax_node n;
 	char *name;
 };
 
@@ -157,24 +155,45 @@ struct syntax_field {
 	char *name;
 };
 
-struct syntax_return {
-	struct syntax_node n;
+enum syntax_operator {
+	OP_ADD,
+	OP_SUB,
+	OP_MUL,
+	OP_DIV,
+	OP_FDIV,
+	OP_EXP,
+	OP_MOD,
+	
+	OP_BAND,
+	OP_BOR,
+	OP_BNOT,
+	OP_XOR,
+	OP_LSHIFT,
+	OP_RSHIFT,
+	
+	OP_CONC,
+	
+	OP_LESS,
+	OP_GREATER,
+	OP_LE,
+	OP_GE,
+	OP_EQ,
+	OP_NE,
+	OP_AND,
+	OP_OR,
+
+	OP_NOT,
+	OP_LEN,
+	OP_NEG,
 };
 
-struct syntax_program *create_syntax_program();
-void release_syntax_program(struct syntax_program *program);
+struct syntax_operator {
+	struct syntax_node n;
+	int op;
+};
 
 struct syntax_chunk *create_syntax_chunk();
 void release_syntax_chunk(struct syntax_chunk *chunk);
-
-struct syntax_requirement *create_syntax_requirement(const char *name);
-void release_syntax_requirement(struct syntax_requirement *req);
-
-struct syntax_function *create_syntax_function(const char *name);
-void release_syntax_function(struct syntax_function *func);
-
-struct syntax_functioncall *create_syntax_functioncall();
-void release_syntax_functioncall(struct syntax_functioncall *fcall);
 
 struct syntax_block *create_syntax_block();
 void release_syntax_block(struct syntax_block *block);
@@ -182,13 +201,22 @@ void release_syntax_block(struct syntax_block *block);
 struct syntax_statement *create_syntax_statement();
 void release_syntax_statement(struct syntax_statement *stmt);
 
+struct syntax_function *create_syntax_function(const char *name);
+void release_syntax_function(struct syntax_function *func);
+
+struct syntax_functioncall *create_syntax_functioncall();
+void release_syntax_functioncall(struct syntax_functioncall *fcall);
+
 struct syntax_expression *create_syntax_expression();
 void release_syntax_expression(struct syntax_expression *expr);
 
 struct syntax_variable *create_syntax_variable(const char *name);
 void release_syntax_variable(struct syntax_variable *var);
 
-struct syntax_argument *create_syntax_argument(const char *name);
+struct syntax_parameter *create_syntax_parameter(const char *name);
+void release_syntax_parameter(struct syntax_parameter *par);
+
+struct syntax_parameter *create_syntax_argument();
 void release_syntax_argument(struct syntax_argument *arg);
 
 struct syntax_table *create_syntax_table();
@@ -197,7 +225,7 @@ void release_syntax_table(struct syntax_table *table);
 struct syntax_field *create_syntax_field(const char *name);
 void release_syntax_field(struct syntax_field *field);
 
-struct syntax_return *create_syntax_return();
-void release_syntax_return(struct syntax_return *ret);
+struct syntax_operator *create_syntax_operator(int op);
+void release_syntax_operator(struct syntax_operator *op);
 
 #endif
