@@ -164,9 +164,6 @@ void syntax_node_release(struct syntax_node *n) {
 	case SNT_PARAMETER:
 		release_syntax_parameter(node);
 		break;
-	case SNT_OPERATOR:
-		release_syntax_operator(node);
-		break;
 	default:
 		log_warn("unknown syntax node type to release:%d", n->type);
 		syntax_node_release_children(n);
@@ -233,14 +230,14 @@ void release_syntax_functioncall(struct syntax_functioncall *fcall) {
 }
 
 struct syntax_expression *create_syntax_expression() {
-	struct syntax_expression *expr = malloc(sizeof(struct syntax_expression));
-	syntax_node_init(&expr->n, SNT_EXPRESSION);
-	return expr;
+	struct syntax_expression *exp = malloc(sizeof(struct syntax_expression));
+	syntax_node_init(&exp->n, SNT_EXPRESSION);
+	return exp;
 }
 
-void release_syntax_expression(struct syntax_expression *expr) {
-	syntax_node_release_children(&expr->n);
-	free(expr);	
+void release_syntax_expression(struct syntax_expression *exp) {
+	syntax_node_release_children(&exp->n);
+	free(exp);	
 }
 
 struct syntax_variable *create_syntax_variable(const char *name) {
@@ -302,16 +299,4 @@ void release_syntax_field(struct syntax_field *field) {
 	syntax_node_release_children(&field->n);
 	free(field->name);
 	free(field);
-}
-
-struct syntax_operator *create_syntax_operator(int op) {
-	struct syntax_operator *opr = malloc(sizeof(struct syntax_operator));
-	syntax_node_init(&opr->n, SNT_OPERATOR);
-	opr->op = op;
-	return opr;
-}
-
-void release_syntax_operator(struct syntax_operator *op) {
-	syntax_node_release_children(&op->n);
-	free(op);
 }

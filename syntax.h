@@ -41,7 +41,6 @@ enum syntax_node_type {
 	SNT_VARIABLE,
 	SNT_PARAMETER,
 	SNT_ARGUMENT,
-	SNT_OPERATOR,
 };
 
 struct syntax_chunk {
@@ -84,34 +83,47 @@ struct syntax_statement {
 };
 
 enum syntax_expression_tag {
-	EXPR_NIL,
-	EXPR_NUMBER,
-	EXPR_STRING,
-	EXPR_TABLE,
-	EXPR_VAR,
-	EXPR_FCALL,
+	EXP_NIL,
+	EXP_TRUE,
+	EXP_FALSE,
+	EXP_NUMBER,
+	EXP_STRING,
+	EXP_DOTS,
+	EXP_TABLE,
+	EXP_VAR,
+	EXP_FCALL,
+	EXP_FUNC,
+	EXP_PARENTHESIS,
 
-	EXPR_PARENTHESES,
+	EXP_ADD,
+	EXP_SUB,
+	EXP_MUL,
+	EXP_DIV,
+	EXP_FDIV,
+	EXP_EXP,
+	EXP_MOD,
 
-	EXPR_ADD,
-	EXPR_SUB,
-	EXPR_MULTY,
-	EXPR_DIV,
-	EXPR_MOD,
-	EXPR_NEG,
-	
-	EXPR_EQ,
-	EXPR_NE,
-	EXPR_GREATER,
-	EXPR_LESS,
-	EXPR_GE,
-	EXPR_LE,
-	
-	EXPR_NOT,
-	EXPR_AND,
-	EXPR_OR,
+	EXP_BAND,
+	EXP_BOR,
+	EXP_XOR,
+	EXP_LSHIFT,
+	EXP_RSHIFT,
 
-	EXPR_CONC,
+	EXP_CONC,
+
+	EXP_LESS,
+	EXP_GREATER,
+	EXP_LE,
+	EXP_GE,
+	EXP_EQ,
+	EXP_NE,
+	EXP_AND,
+	EXP_OR,
+
+	EXP_NOT,
+	EXP_LEN,
+	EXP_NEG,
+	EXP_BNOT,	
 };
 
 struct syntax_expression {
@@ -155,43 +167,6 @@ struct syntax_field {
 	char *name;
 };
 
-enum syntax_operator {
-	OP_ADD,
-	OP_SUB,
-	OP_MUL,
-	OP_DIV,
-	OP_FDIV,
-	OP_EXP,
-	OP_MOD,
-	
-	OP_BAND,
-	OP_BOR,
-	OP_BNOT,
-	OP_XOR,
-	OP_LSHIFT,
-	OP_RSHIFT,
-	
-	OP_CONC,
-	
-	OP_LESS,
-	OP_GREATER,
-	OP_LE,
-	OP_GE,
-	OP_EQ,
-	OP_NE,
-	OP_AND,
-	OP_OR,
-
-	OP_NOT,
-	OP_LEN,
-	OP_NEG,
-};
-
-struct syntax_operator {
-	struct syntax_node n;
-	int op;
-};
-
 struct syntax_chunk *create_syntax_chunk();
 void release_syntax_chunk(struct syntax_chunk *chunk);
 
@@ -208,7 +183,7 @@ struct syntax_functioncall *create_syntax_functioncall();
 void release_syntax_functioncall(struct syntax_functioncall *fcall);
 
 struct syntax_expression *create_syntax_expression();
-void release_syntax_expression(struct syntax_expression *expr);
+void release_syntax_expression(struct syntax_expression *exp);
 
 struct syntax_variable *create_syntax_variable(const char *name);
 void release_syntax_variable(struct syntax_variable *var);
@@ -224,8 +199,5 @@ void release_syntax_table(struct syntax_table *table);
 
 struct syntax_field *create_syntax_field(const char *name);
 void release_syntax_field(struct syntax_field *field);
-
-struct syntax_operator *create_syntax_operator(int op);
-void release_syntax_operator(struct syntax_operator *op);
 
 #endif

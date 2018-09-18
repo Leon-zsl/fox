@@ -20,12 +20,79 @@ void yyprint(FILE *file, int type, YYSTYPE value);
 #define yyinfo(msg) log_info("%s:%d, %s\n", yyfilename, yylineno, (msg))
 #define yyerror(msg) log_error("%s:%d, %s\n", yyfilename, yylineno, (msg))
 
+int token2binexp(int token) {
+	switch(token) {
+	case '+':
+		return EXP_ADD;
+	case '-':
+		return EXP_SUB;
+	case '*':
+		return EXP_MUL;
+	case '/':
+		return EXP_DIV;
+	case FDIV:
+		return EXP_FDIV;
+	case '^':
+		return EXP_EXP;
+	case '%':
+		return EXP_MOD;
+	case '&':
+		return EXP_BAND;
+	case '|':
+		return EXP_BOR;
+	case '~':
+		return EXP_XOR;
+	case LSHIFT:
+		return EXP_LSHIFT;
+	case RSHIFT:
+		return EXP_RSHIFT;
+	case CONC:
+		return EXP_CONC;
+	case '<':
+		return EXP_LESS;
+	case '>':
+		return EXP_GREATER;
+	case LE:
+		return EXP_LE;
+	case GE:
+		return EXP_GE;
+	case EQ:
+		return EXP_EQ;
+	case NE:
+		return EXP_NE;
+	case AND:
+		return EXP_AND;
+	case OR:
+		return EXP_OR;
+	default:
+		log_error("%s:%d, unknown token to binop: %d\n", yyfilename, yylineno, token)
+		return 0;
+	}
+}
+
+int token2unexp(int token) {
+	switch(token) {
+	case NOT:
+		return EXP_NOT;
+	case '#':
+		return EXP_LEN;
+	case '~':
+		return EXP_BNOT;
+	case '-':
+		return EXP_NEG;
+	default:
+		log_error("%s:%d, unknown token to unop: %d\n", yyfilename, yylineno, token)		
+		return 0;
+	}
+}
+
 struct syntax_tree *parse_tree = NULL;
 struct symbol_table *parse_table = NULL;
 
 %}
 
 %union {
+	int integer;
 	double number;
 	char* string;
 	struct syntax_chunk *chunk;
@@ -33,12 +100,12 @@ struct symbol_table *parse_table = NULL;
 	struct syntax_statement *stmt;
 	struct syntax_function *func;
 	struct syntax_functioncall *fcall;
-	struct syntax_expression *expr;
+	struct syntax_expression *exp;
 	struct syntax_variable *var;
 	struct syntax_parameter *par;
+	struct syntax_argument *arg;
 	struct syntax_table *table;
 	struct syntax_field *field;
-	struct syntax_operator *op;
 }
 
 %start					program
@@ -55,17 +122,20 @@ struct symbol_table *parse_table = NULL;
 %type<chunk>			chunk
 %type<block>			block
 				
-%type<stmt>				stat statlist elsepart retstat label 
-%type<expr>				exp explist prefixexp
+%type<stmt>				stat statlist retstat elsepart label
+%type<exp>				exp explist prefixexp
+
+%type<string>			funcname stdfuncname
+%type<string>			namelist
 						
 %type<var> 				var varlist
-%type<func>				function
-%type<fcall>			function_call						
-%type<arg>				argument argument_list
-
+%type<func>				funcbody
+%type<fcall>			funcall
+%type<arg>				args
+%type<par>				pars
 %type<table>			table
 %type<field>			field fieldlist
-%type<ret>				ret
+%type<integer>			binop unop
 
 %left					OR
 %left					AND						
@@ -188,31 +258,33 @@ stat:			';'
 				}
 		;
 
-retstat:		RETURN
+retstat:		RETURN retend
 				{
 					struct syntax_statement *ret = create_syntax_statement();
 					ret->tag = STMT_RETURN;
 					$$ = ret;
 				}
-		|		RETURN ';'
-				{
-					struct syntax_statement *ret = create_syntax_statement();
-					ret->tag = STMT_RETURN;
-					$$ = ret;
-				}
-		|		RETURN explist
+		|		RETURN explist retend
 				{
 					struct syntax_statement *ret = create_syntax_statement();
 					ret->tag = STMT_RETURN;
 					syntax_node_push_child_tail(&ret->n, &($2->n));
 					$$ = ret;
 				}
-		|		RETURN explist ';'
+		;
+
+retend:		/* empty*/
+		|		';'
+		;
+
+elsepart:		/* empty */
 				{
-					struct syntax_statement *ret = create_syntax_statement();
-					ret->tag = STMT_RETURN;
-					syntax_node_push_child_tail(&ret->n, &($2->n));
-					$$ = ret;					
+				}
+		|		ELSE block
+				{
+				}
+		|		ELSEIF exp THEN block elsepart
+				{
 				}
 		;
 
@@ -290,7 +362,7 @@ exp:			NIL
 		|		DOTS
 				{
 				}
-		|		funcdef
+		|		FUNCTION funcbody
 				{
 				}
 		|		prefixexp
@@ -339,20 +411,15 @@ args:			'(' ')'
 				}
 		;
 
-funcdef:		FUNCTION funcbody
-				{
-				}
-		;
-
 funcbody:		'(' ')' block END
 				{
 				}
-		|		'(' parlist ')' block END
+		|		'(' pars ')' block END
 				{
 				}
 		;
 
-parlist:		namelist
+pars:			namelist
 				{
 				}
 		|		namelist ',' DOTS
@@ -365,6 +432,12 @@ parlist:		namelist
 
 table:			'{' fieldlist '}'
 				{
+					$$ = create_syntax_table();
+					syntax_node_push_child_tail(&($$->n), &($2->n));
+				}
+				'{' '}'
+				{
+					$$ = create_syntax_table();
 				}
 		;
 
@@ -395,9 +468,6 @@ fieldsep:		','
 		;
 
 binop:			'+'
-				{
-					struct syntax_operator *op = 
-				}
 		|		'-'
 		|		'*'
 		|		'/'

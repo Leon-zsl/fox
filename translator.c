@@ -213,14 +213,6 @@ static int trans_syntax_field(struct translator *t, struct syntax_field *field) 
 	return trans_syntax_node_children(t, &field->n);
 }
 
-static int trans_syntax_operator(struct translator *t, struct syntax_operator *op) {
-	log_info("trans operator, depth:%d, children count:%d, op:%s",
-			 syntax_node_depth(&op->n),
-			 syntax_node_children_count(&op->n),
-			 op->op);
-	return trans_syntax_node_children(t, &op->n);	
-}
-
 static int translate_syntax_node(struct translator *t, struct syntax_node *n) {
 	int val = 0;
 	void *node = n;
@@ -257,9 +249,6 @@ static int translate_syntax_node(struct translator *t, struct syntax_node *n) {
 		break;
 	case SNT_PARAMETER:
 		val = trans_syntax_parameter(t, node);
-		break;
-	case SNT_OPERATOR:
-		val = trans_syntax_operator(t, node);
 		break;
 	default:
 		log_error("unknown syntax node type to translate:%d", n->type);
