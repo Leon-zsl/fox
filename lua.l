@@ -19,12 +19,12 @@ extern char *yytext;
 \r\n?					yylineno++;
 "--".*					;
 
-"require"				return REQUIRE;
 "function"				return FUNCTION;
 "local"					return LOCAL;
-"return"				return RETURN;
-"end"					return END;
+
 "nil" 					return NIL;
+"false"					return FALSE;
+"true"					return TRUE;
 
 "if" 					return IF;
 "then" 					return THEN;
@@ -34,6 +34,13 @@ extern char *yytext;
 "do"					return DO;
 "repeat" 				return REPEAT;
 "until" 			    return UNTIL;
+"for"					return FOR;
+"break"					return BREAK;
+"end"					return END;
+"return"				return RETURN;
+"goto"					return GOTO;
+"in"					return IN;
+"::"					return LABEL;
 
 "and" 					return AND;
 "or" 					return OR;
@@ -44,6 +51,9 @@ extern char *yytext;
 "~=" 					return NE;
 "..."					return DOTS;
 ".."					return CONC;
+"<<"					return LSHIFT;
+">>"					return RSHIFT;
+"//"					return FDIV;
 
 [a-zA-Z_][a-zA-Z0-9_]* 	{ yylval.string = strdup(yytext); return NAME; }
 

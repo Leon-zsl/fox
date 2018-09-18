@@ -79,8 +79,8 @@ int translate(struct syntax_tree *tree, struct symbol_table *table, const char *
 		return 0;
 	}
 
-	if(tree->root->type != SNT_PROGRAM) {
-		log_error("syntax tree root is not program");
+	if(tree->root->type != SNT_CHUNK) {
+		log_error("syntax tree root is not chunk");
 		return 0;
 	}	
 
@@ -107,13 +107,6 @@ static int trans_syntax_node_children(struct translator *t, struct syntax_node *
 	return 1;
 }
 
-static int trans_syntax_program(struct translator *t, struct syntax_program *program) {
-	log_info("trans program, depth:%d, children count:%d",
-			 syntax_node_depth(&program->n),
-			 syntax_node_children_count(&program->n));
-	return trans_syntax_node_children(t, &program->n);
-}
-
 static int trans_syntax_chunk(struct translator *t, struct syntax_chunk *chunk) {
 	log_info("trans chunk, depth:%d, children count:%d",
 			 syntax_node_depth(&chunk->n),
@@ -121,12 +114,19 @@ static int trans_syntax_chunk(struct translator *t, struct syntax_chunk *chunk) 
 	return trans_syntax_node_children(t, &chunk->n);
 }
 
-static int trans_syntax_requirement(struct translator *t, struct syntax_requirement *req) {
-	log_info("trans requirement, depth:%d, children count:%d, name:%s",
-			 syntax_node_depth(&req->n),
-			 syntax_node_children_count(&req->n),
-			 req->name);
-	return trans_syntax_node_children(t, &req->n);
+static int trans_syntax_block(struct translator *t, struct syntax_block *block) {
+	log_info("trans block, depth:%d, children count:%d",
+			 syntax_node_depth(&block->n),
+			 syntax_node_children_count(&block->n));
+	return trans_syntax_node_children(t, &block->n);
+}
+
+static int trans_syntax_statement(struct translator *t, struct syntax_statement *stmt) {
+	log_info("trans statement, depth:%d, children count:%d, tag:%d",
+			 syntax_node_depth(&stmt->n),
+			 syntax_node_children_count(&stmt->n),
+			 stmt->tag);
+	return trans_syntax_node_children(t, &stmt->n);
 }
 
 static int trans_syntax_function(struct translator *t, struct syntax_function *func) {
@@ -144,20 +144,6 @@ static int trans_syntax_functioncall(struct translator *t, struct syntax_functio
 	return trans_syntax_node_children(t, &fcall->n);
 }
 
-static int trans_syntax_block(struct translator *t, struct syntax_block *block) {
-	log_info("trans block, depth:%d, children count:%d",
-			 syntax_node_depth(&block->n),
-			 syntax_node_children_count(&block->n));
-	return trans_syntax_node_children(t, &block->n);
-}
-
-static int trans_syntax_statement(struct translator *t, struct syntax_statement *stmt) {
-	log_info("trans statement, depth:%d, children count:%d, tag:%d",
-			 syntax_node_depth(&stmt->n),
-			 syntax_node_children_count(&stmt->n),
-			 stmt->tag);
-	return trans_syntax_node_children(t, &stmt->n);
-}
 
 static int trans_syntax_expression(struct translator *t, struct syntax_expression *expr) {
 	if(expr->tag == EXPR_NUMBER) {
@@ -198,11 +184,18 @@ static int trans_syntax_variable(struct translator *t, struct syntax_variable *v
 }
 
 static int trans_syntax_argument(struct translator *t, struct syntax_argument *arg) {
-	log_info("trans argument, depth:%d, children count:%d, name:%s",
+	log_info("trans argument, depth:%d, children count:%d",
 			 syntax_node_depth(&arg->n),
-			 syntax_node_children_count(&arg->n),
-			 arg->name);
+			 syntax_node_children_count(&arg->n));
 	return trans_syntax_node_children(t, &arg->n);
+}
+
+static int trans_syntax_parameter(struct translator *t, struct syntax_parameter *par) {
+	log_info("trans parameter, depth:%d, children count:%d, name:%s",
+			 syntax_node_depth(&par->n),
+			 syntax_node_children_count(&par->n),
+			 par->name);
+	return trans_syntax_node_children(t, &par->n);
 }
 
 static int trans_syntax_table(struct translator *t, struct syntax_table *st) {
@@ -220,37 +213,32 @@ static int trans_syntax_field(struct translator *t, struct syntax_field *field) 
 	return trans_syntax_node_children(t, &field->n);
 }
 
-static int trans_syntax_return(struct translator *t, struct syntax_return *ret) {
-	log_info("trans return, depth:%d, children count:%d",
-			 syntax_node_depth(&ret->n),
-			 syntax_node_children_count(&ret->n));
-	return trans_syntax_node_children(t, &ret->n);
+static int trans_syntax_operator(struct translator *t, struct syntax_operator *op) {
+	log_info("trans operator, depth:%d, children count:%d, op:%s",
+			 syntax_node_depth(&op->n),
+			 syntax_node_children_count(&op->n),
+			 op->op);
+	return trans_syntax_node_children(t, &op->n);	
 }
 
 static int translate_syntax_node(struct translator *t, struct syntax_node *n) {
 	int val = 0;
 	void *node = n;
 	switch(n->type) {
-	case SNT_PROGRAM:
-		val = trans_syntax_program(t, node);
-		break;
 	case SNT_CHUNK:
 		val = trans_syntax_chunk(t, node);
-		break;
-	case SNT_REQUIREMENT:
-		val = trans_syntax_requirement(t, node);
-		break;
-	case SNT_FUNCTION:
-		val = trans_syntax_function(t, node);
-		break;
-	case SNT_FUNCTIONCALL:
-		val = trans_syntax_functioncall(t, node);
 		break;
 	case SNT_BLOCK:
 		val = trans_syntax_block(t, node);
 		break;
 	case SNT_STATEMENT:
 		val = trans_syntax_statement(t, node);
+		break;
+	case SNT_FUNCTION:
+		val = trans_syntax_function(t, node);
+		break;
+	case SNT_FUNCTIONCALL:
+		val = trans_syntax_functioncall(t, node);
 		break;
 	case SNT_EXPRESSION:
 		val = trans_syntax_expression(t, node);
@@ -267,8 +255,11 @@ static int translate_syntax_node(struct translator *t, struct syntax_node *n) {
 	case SNT_ARGUMENT:
 		val = trans_syntax_argument(t, node);
 		break;
-	case SNT_RETURN:
-		val = trans_syntax_return(t, node);
+	case SNT_PARAMETER:
+		val = trans_syntax_parameter(t, node);
+		break;
+	case SNT_OPERATOR:
+		val = trans_syntax_operator(t, node);
 		break;
 	default:
 		log_error("unknown syntax node type to translate:%d", n->type);
