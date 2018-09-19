@@ -137,9 +137,11 @@ static int trans_syntax_statement(struct translator *t, struct syntax_statement 
 	case STMT_EMPTY:
 		break;
 	//todo:
+	case STMT_LABEL:
+		log_error("unsupport stmt:");
 	case STMT_INVALID:
 	default:
-		log_error("unknown stmt tag:%d", stmt->tag);
+		log_error("unknown stmt:%d", stmt->tag);
 		break;
 	}
 	return trans_syntax_node_children(t, &stmt->n);

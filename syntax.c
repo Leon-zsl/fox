@@ -18,7 +18,7 @@ void syntax_tree_walk(struct syntax_tree *t, syntax_node_handler h) {
 	syntax_node_walk(t->root, h);
 }
 
-void syntax_node_init(struct syntax_node *n, int ty) {
+void syntax_node_init(struct syntax_node *n, enum syntax_node_type ty) {
 	n->next = NULL;
 	n->parent = NULL;
 	n->children = NULL;
@@ -117,6 +117,137 @@ void syntax_node_walk(struct syntax_node *n, syntax_node_handler h) {
 		h(c);
 		c = c->next;
 	}
+}
+
+static char* syntax_node_type_name[] = {
+	"chunk",
+	"block",
+	"statement",
+	"expression",
+	"varaible",
+	"function",
+	"function_call",
+	"argument",
+	"table",
+	"field"
+};
+
+const char *syntax_node_type_string(enum syntax_node_type ty) {
+	return syntax_node_type_name[ty];
+}
+
+static char *syntax_statement_tag_name[] = {
+	"invalid",
+	"empty",
+	"label",
+	"break",
+	"goto",
+	"return",
+	
+	"do",
+	"while",
+	"repeat",
+	"for_in",
+	"for_iterator",
+
+	"if",
+	"else",
+	"elseif",
+
+	"variable",
+	"local_variable",
+	
+	"function",
+	"local_function",
+	"function_call"
+};
+
+const char *syntax_statement_tag_string(enum syntax_statement_tag tag) {
+	return syntax_statement_tag_name[tag];
+}
+
+static char *syntax_expression_tag_name[] = {
+	"invalid",
+	"nil",
+	"true",
+	"false",
+	"number",
+	"string",
+	"...",
+	"table",
+	"variable",
+	"function",
+	"function_call",
+	"()",
+
+	"+",
+	"-",
+	"*",
+	"/",
+	"//",
+	"^",
+	"%",
+	
+	"&",
+	"|",
+	"~",
+	"<<",
+	">>",
+
+
+	"..",
+
+	"<",
+	">",
+	"<=",
+	">=",
+	"==",
+	"~=",
+	"and",
+	"or",
+
+	"not",
+	"#",
+	"neg -",
+	"bit not ~",
+};
+
+const char *syntax_expression_tag_string(enum syntax_expression_tag tag) {
+	return syntax_expression_tag_name[tag];
+}
+
+static char *syntax_variable_tag_name[] = {
+	"invalid",
+	"normal variable",
+	"index variable",
+	"key-value variable"
+};
+
+const char *syntax_variable_tag_string(enum syntax_variable_tag tag) {
+	return syntax_variable_tag_name[tag];
+}
+
+static char *syntax_argument_tag_name[] = {
+	"invalid",
+	"empty argument",
+	"normail argument",
+	"string argument",
+	"table argument"
+};
+
+const char *syntax_argument_tag_string(enum syntax_argument_tag tag) {
+	return syntax_argument_tag_name[tag];
+}
+
+static char *syntax_field_tag_name[] = {
+	"invalid",
+	"single field",
+	"index field",
+	"key-value field"
+};
+
+const char *syntax_field_tag_string(enum syntax_field_tag tag) {
+	return syntax_field_tag_name[tag];
 }
 
 static void syntax_node_release_children(struct syntax_node *n) {

@@ -1,16 +1,31 @@
 #ifndef __SYNTAX_H__
 #define __SYNTAX_H__
 
+enum syntax_node_type {
+	SNT_CHUNK,
+	SNT_BLOCK,
+	SNT_STATEMENT,
+	SNT_EXPRESSION,
+	SNT_VARIABLE,
+	SNT_FUNCTION,
+	SNT_FUNCTIONCALL,	
+	SNT_ARGUMENT,
+	SNT_TABLE,
+	SNT_FIELD,
+};
+
+const char *syntax_node_type_string(enum syntax_node_type ty);
+
 struct syntax_node {
 	struct syntax_node *next;
 	struct syntax_node *parent;
 	struct syntax_node *children;
-	int type;
+	enum syntax_node_type type;
 };
 
 typedef void (*syntax_node_handler)(struct syntax_node *n);
 
-void syntax_node_init(struct syntax_node *n, int ty);
+void syntax_node_init(struct syntax_node *n, enum syntax_node_type ty);
 void syntax_node_push_child_head(struct syntax_node *p, struct syntax_node *c);
 void syntax_node_push_child_tail(struct syntax_node *p, struct syntax_node *c);
 void syntax_node_push_sibling_head(struct syntax_node *p, struct syntax_node *c);
@@ -29,19 +44,6 @@ struct syntax_tree *syntax_tree_create();
 void syntax_tree_release(struct syntax_tree *t);
 void syntax_tree_walk(struct syntax_tree *t, syntax_node_handler h);
 
-enum syntax_node_type {
-	SNT_CHUNK,
-	SNT_BLOCK,
-	SNT_STATEMENT,
-	SNT_EXPRESSION,
-	SNT_VARIABLE,
-	SNT_FUNCTION,
-	SNT_FUNCTIONCALL,	
-	SNT_ARGUMENT,
-	SNT_TABLE,
-	SNT_FIELD,	
-};
-
 struct syntax_chunk {
 	struct syntax_node n;
 };
@@ -56,13 +58,8 @@ enum syntax_statement_tag {
 	STMT_LABEL,
 	STMT_BREAK,
 	STMT_GOTO,
-
-	STMT_VAR,
-	STMT_LOCAL_VAR,	
-	STMT_FCALL,
-	STMT_FUNC,
-	STMT_LOCAL_FUNC,
-
+	STMT_RETURN,
+	
 	STMT_DO,
 	STMT_WHILE,
 	STMT_REPEAT,
@@ -73,12 +70,19 @@ enum syntax_statement_tag {
 	STMT_ELSE,
 	STMT_ELSEIF,
 
-	STMT_RETURN,
+	STMT_VAR,
+	STMT_LOCAL_VAR,
+	
+	STMT_FUNC,
+	STMT_LOCAL_FUNC,
+	STMT_FCALL,
 };
+
+const char *syntax_statement_tag_string(enum syntax_statement_tag tag);
 
 struct syntax_statement {
 	struct syntax_node n;
-	int tag;
+	enum syntax_statement_tag tag;
 	union {
 		char *name;
 	} value;
@@ -94,8 +98,8 @@ enum syntax_expression_tag {
 	EXP_DOTS,
 	EXP_TABLE,
 	EXP_VAR,
-	EXP_FCALL,
 	EXP_FUNC,
+	EXP_FCALL,
 	EXP_PARENTHESIS,
 
 	EXP_ADD,
@@ -126,13 +130,15 @@ enum syntax_expression_tag {
 	EXP_NOT,
 	EXP_LEN,
 	EXP_NEG,
-	EXP_BNOT,	
+	EXP_BNOT,
 };
+
+const char *syntax_expression_tag_string(enum syntax_expression_tag tag);
 
 struct syntax_expression {
 	struct syntax_node n;
 
-	int tag;
+	enum syntax_expression_tag tag;
 	union {
 		double number;
 		char *string;
@@ -146,10 +152,12 @@ enum syntax_variable_tag {
 	VAR_KEY,
 };
 
+const char *syntax_variable_tag_string(enum syntax_variable_tag tag);
+
 struct syntax_variable {
 	struct syntax_node n;
 
-	int tag;
+	enum syntax_variable_tag tag;
 	char *name;
 };
 
@@ -171,10 +179,12 @@ enum syntax_argument_tag {
 	ARG_TABLE,
 };
 
+const char *syntax_argument_tag_string(enum syntax_argument_tag tag);
+
 struct syntax_argument {
 	struct syntax_node n;
 
-	int tag;
+	enum syntax_argument_tag tag;
 	char *name;
 };
 
@@ -189,10 +199,12 @@ enum syntax_field_tag {
 	FIELD_KEY,
 };
 
+const char *syntax_field_tag_string(enum syntax_field_tag tag);
+
 struct syntax_field {
 	struct syntax_node n;
 
-	int tag;
+	enum syntax_field_tag tag;
 	char *name;
 };
 
