@@ -9,6 +9,8 @@
 #include "syntax.h"
 #include "translator.h"
 
+int log_level = 0;
+
 int ensure_path(const char *srcpath, const char *destpath) {
 	int val = access(srcpath, R_OK);
 	if(val) {

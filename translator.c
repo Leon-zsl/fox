@@ -133,6 +133,10 @@ static int trans_syntax_statement(struct translator *t, struct syntax_statement 
 			 syntax_node_depth(&stmt->n),
 			 syntax_node_children_count(&stmt->n),
 			 stmt->tag);
+	switch(stmt->tag) {
+	case STMT_EMPTY:
+		break;
+	}
 	return trans_syntax_node_children(t, &stmt->n);
 }
 

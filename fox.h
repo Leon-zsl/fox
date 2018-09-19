@@ -10,21 +10,29 @@
 
 #define FOX_VERSION "0.0.1"
 
-#define log_error(fmt, ...) {			                        \
-	char errmsg[1024];											\
-	sprintf(errmsg, fmt, ##__VA_ARGS__);						\
+extern int log_level;
+#define LOG_ERR  2
+#define LOG_WARN 1
+#define LOG_MSG  0
+
+#define log_error(fmt, ...) 			        \
+if(log_level >= LOG_ERR) {						\
+	char errmsg[1024];							\
+	sprintf(errmsg, fmt, ##__VA_ARGS__);		\
 	fprintf(stdout, "[ERROR]FILE:%s LINE:%d %s\n", __FILE__, __LINE__, errmsg); \
 }
 
-#define log_warn(fmt, ...) {            			            \
-	char errmsg[1024];											\
-	sprintf(errmsg, fmt, ##__VA_ARGS__);						\
+#define log_warn(fmt, ...)             			\
+if(log_level >= LOG_WARN) {						\
+	char errmsg[1024];							\
+	sprintf(errmsg, fmt, ##__VA_ARGS__);		\
 	fprintf(stdout, "[WARN]FILE:%s LINE:%d %s\n", __FILE__, __LINE__, errmsg); \
 }
 
-#define log_info(fmt, ...) {                        			\
-	char errmsg[1024];											\
-	sprintf(errmsg, fmt, ##__VA_ARGS__);						\
+#define log_info(fmt, ...)                      \
+if(log_level >= LOG_MSG) {						\
+	char errmsg[1024];							\
+	sprintf(errmsg, fmt, ##__VA_ARGS__);		\
 	fprintf(stdout, "[INFO]FILE:%s LINE:%d %s\n", __FILE__, __LINE__, errmsg); \
 }
 
