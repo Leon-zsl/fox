@@ -62,14 +62,14 @@ struct symbol_table *parse_table = NULL;
 %type<var> 				varlist var
 %type<func>				funcdef
 %type<fcall>			funcall
-%type<arg>				args
+%type<arg>				arglist
 %type<tab>				table
 %type<field>			fieldlist field
 
 %type<string>			funcname basefuncname
 %type<string>			namelist
 %type<string>			label
-%type<string>			pars
+%type<string>			parlist
 
 %left					OR
 %left					AND					
@@ -696,14 +696,14 @@ funcname:		basefuncname
 				}
 		;
 
-funcall:		prefixexp '(' args ')'
+funcall:		prefixexp '(' arglist ')'
 				{
 					struct syntax_functioncall *fcall = create_syntax_functioncall();
 					syntax_node_push_child_tail(&fcall->n, &($1->n));
 					syntax_node_push_child_tail(&fcall->n, &($3->n));
 					$$ = fcall;
 				}
-		|		prefixexp ':' NAME '(' args ')'
+		|		prefixexp ':' NAME '(' arglist ')'
 				{
 					struct syntax_functioncall *fcall = create_syntax_functioncall();
 					fcall->name = $3;
@@ -712,7 +712,7 @@ funcall:		prefixexp '(' args ')'
 					$$ = fcall;
 				}
 
-args:			/* empty */
+arglist:		/* empty */
 				{
 					struct syntax_argument *arg = create_syntax_argument();
 					arg->tag = ARG_EMPTY;
@@ -733,7 +733,7 @@ funcdef:		'(' ')' block END
 					syntax_node_push_child_tail(&func->n, &($3->n));
 					$$ = func;
 				}
-		|		'(' pars ')' block END
+		|		'(' parlist ')' block END
 				{
 					struct syntax_function *func = create_syntax_function();
 					func->name = $2;
@@ -742,7 +742,7 @@ funcdef:		'(' ')' block END
 				}
 		;
 
-pars:			namelist
+parlist:		namelist
 		|		namelist ',' DOTS
 				{
 					char *s0 = fox_strcat($1, ",");
