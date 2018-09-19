@@ -62,7 +62,7 @@ typedef unsigned long long uint64;
 #define ct_assert(e) { enum { compile_time_assert_value = 1/ !!(e) } }
 #endif
 
-static inline char *strdup(const char *s) {
+static inline char *fox_strdup(const char *s) {
 	if(s == NULL) return NULL;
 	size_t l = strlen(s);
 	char *ds = malloc(l+1);
@@ -71,8 +71,27 @@ static inline char *strdup(const char *s) {
 	return ds;
 }
 
-static inline int strempty(const char *s) {
+static inline int fox_strempty(const char *s) {
 	return s == NULL || strlen(s) == 0;
 }
 
+static inline char *fox_strcat(const char *s0, const char * s1) {
+	if(!s0) {
+		return fox_strdup(s1);
+	}
+	if(!s1) {
+		return fox_strdup(s0);
+	}
+
+	int l0 = strlen(s0);
+	int l1 = strlen(s1);
+	char *d = malloc(l0 + l1 + 1);
+	if(l0 + l1 == 0) {
+		d[0] = '\0';
+	} else {
+		strncpy(d, s0, l0);
+		strncpy(d + l0, s1, l1);
+	}
+	return d;
+}
 #endif

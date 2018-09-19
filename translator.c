@@ -146,13 +146,13 @@ static int trans_syntax_functioncall(struct translator *t, struct syntax_functio
 
 
 static int trans_syntax_expression(struct translator *t, struct syntax_expression *expr) {
-	if(expr->tag == EXPR_NUMBER) {
+	if(expr->tag == EXP_NUMBER) {
 		log_info("trans expression, depth:%d, children count:%d, tag:%d, number:%f",
 				 syntax_node_depth(&expr->n),
 				 syntax_node_children_count(&expr->n),
 				 expr->tag,
 				 expr->value.number);
-	} else if(expr->tag == EXPR_STRING) {
+	} else if(expr->tag == EXP_STRING) {
 		log_info("trans expression, depth:%d, children count:%d, tag:%d, string:%s",
 				 syntax_node_depth(&expr->n),
 				 syntax_node_children_count(&expr->n),
@@ -190,14 +190,6 @@ static int trans_syntax_argument(struct translator *t, struct syntax_argument *a
 	return trans_syntax_node_children(t, &arg->n);
 }
 
-static int trans_syntax_parameter(struct translator *t, struct syntax_parameter *par) {
-	log_info("trans parameter, depth:%d, children count:%d, name:%s",
-			 syntax_node_depth(&par->n),
-			 syntax_node_children_count(&par->n),
-			 par->name);
-	return trans_syntax_node_children(t, &par->n);
-}
-
 static int trans_syntax_table(struct translator *t, struct syntax_table *st) {
 	log_info("trans table, depth:%d, children count:%d",
 			 syntax_node_depth(&st->n),
@@ -226,29 +218,26 @@ static int translate_syntax_node(struct translator *t, struct syntax_node *n) {
 	case SNT_STATEMENT:
 		val = trans_syntax_statement(t, node);
 		break;
+	case SNT_EXPRESSION:
+		val = trans_syntax_expression(t, node);
+		break;
+	case SNT_VARIABLE:
+		val = trans_syntax_variable(t, node);
+		break;
 	case SNT_FUNCTION:
 		val = trans_syntax_function(t, node);
 		break;
 	case SNT_FUNCTIONCALL:
 		val = trans_syntax_functioncall(t, node);
 		break;
-	case SNT_EXPRESSION:
-		val = trans_syntax_expression(t, node);
+	case SNT_ARGUMENT:
+		val = trans_syntax_argument(t, node);
 		break;
 	case SNT_TABLE:
 		val = trans_syntax_table(t, node);
 		break;
 	case SNT_FIELD:
 		val = trans_syntax_field(t, node);
-		break;
-	case SNT_VARIABLE:
-		val = trans_syntax_variable(t, node);
-		break;
-	case SNT_ARGUMENT:
-		val = trans_syntax_argument(t, node);
-		break;
-	case SNT_PARAMETER:
-		val = trans_syntax_parameter(t, node);
 		break;
 	default:
 		log_error("unknown syntax node type to translate:%d", n->type);

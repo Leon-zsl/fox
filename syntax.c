@@ -161,9 +161,6 @@ void syntax_node_release(struct syntax_node *n) {
 	case SNT_ARGUMENT:
 		release_syntax_argument(node);
 		break;
-	case SNT_PARAMETER:
-		release_syntax_parameter(node);
-		break;
 	default:
 		log_warn("unknown syntax node type to release:%d", n->type);
 		syntax_node_release_children(n);
@@ -197,18 +194,49 @@ void release_syntax_block(struct syntax_block *block) {
 struct syntax_statement *create_syntax_statement() {
 	struct syntax_statement *stmt = malloc(sizeof(struct syntax_statement));
 	syntax_node_init(&stmt->n, SNT_STATEMENT);
+	stmt->tag = STMT_INVALID;
+	stmt->value.name = NULL;
 	return stmt;
 }
 
 void release_syntax_statement(struct syntax_statement *stmt) {
 	syntax_node_release_children(&stmt->n);
+	//todo: maybe should free name according to the tag
 	free(stmt);
 }
 
-struct syntax_function *create_syntax_function(const char *name) {
+struct syntax_expression *create_syntax_expression() {
+	struct syntax_expression *exp = malloc(sizeof(struct syntax_expression));
+	syntax_node_init(&exp->n, SNT_EXPRESSION);
+	exp->tag = EXP_INVALID;
+	exp->value.string = NULL;
+	return exp;
+}
+
+void release_syntax_expression(struct syntax_expression *exp) {
+	syntax_node_release_children(&exp->n);
+	//todo: maybe should free string according to the tag
+	free(exp);	
+}
+
+struct syntax_variable *create_syntax_variable() {
+	struct syntax_variable *var = malloc(sizeof(struct syntax_variable));
+	syntax_node_init(&var->n, SNT_VARIABLE);
+	var->tag = VAR_INVALID;
+	var->name = NULL;
+	return var;
+}
+
+void release_syntax_variable(struct syntax_variable *var) {
+	syntax_node_release_children(&var->n);
+	free(var->name);
+	free(var);
+}
+
+struct syntax_function *create_syntax_function() {
 	struct syntax_function *func = malloc(sizeof(struct syntax_function));
 	syntax_node_init(&func->n, SNT_FUNCTION);
-	func->name = strdup(name);
+	func->name = NULL;
 	return func;
 }
 
@@ -221,60 +249,28 @@ void release_syntax_function(struct syntax_function *func) {
 struct syntax_functioncall *create_syntax_functioncall() {
 	struct syntax_functioncall *fcall = malloc(sizeof(struct syntax_functioncall));
 	syntax_node_init(&fcall->n, SNT_FUNCTIONCALL);
+	fcall->name = NULL;
 	return fcall;
 }
 
 void release_syntax_functioncall(struct syntax_functioncall *fcall) {
 	syntax_node_release_children(&fcall->n);
+	free(fcall->name);
 	free(fcall);
-}
-
-struct syntax_expression *create_syntax_expression() {
-	struct syntax_expression *exp = malloc(sizeof(struct syntax_expression));
-	syntax_node_init(&exp->n, SNT_EXPRESSION);
-	return exp;
-}
-
-void release_syntax_expression(struct syntax_expression *exp) {
-	syntax_node_release_children(&exp->n);
-	free(exp);	
-}
-
-struct syntax_variable *create_syntax_variable(const char *name) {
-	struct syntax_variable *var = malloc(sizeof(struct syntax_variable));
-	syntax_node_init(&var->n, SNT_VARIABLE);
-	var->name = strdup(name);
-	return var;
-}
-
-void release_syntax_variable(struct syntax_variable *var) {
-	syntax_node_release_children(&var->n);
-	free(var->name);
-	free(var);
 }
 
 struct syntax_argument *create_syntax_argument() {
 	struct syntax_argument *arg = malloc(sizeof(struct syntax_argument));
 	syntax_node_init(&arg->n, SNT_ARGUMENT);
+	arg->tag = ARG_INVALID;
+	arg->name = NULL;
 	return arg;
 }
 
 void release_syntax_argument(struct syntax_argument *arg) {
 	syntax_node_release_children(&arg->n);
+	free(arg->name);
 	free(arg);
-}
-
-struct syntax_parameter *create_syntax_parameter(const char *name) {
-	struct syntax_parameter *par = malloc(sizeof(struct syntax_parameter));
-	syntax_node_init(&par->n, SNT_PARAMETER);
-	par->name = strdup(name);
-	return par;
-}
-
-void release_syntax_parameter(struct syntax_parameter *par) {
-	syntax_node_release_children(&par->n);
-	free(par->name);
-	free(par);
 }
 
 struct syntax_table *create_syntax_table() {
@@ -288,10 +284,11 @@ void release_syntax_table(struct syntax_table *table) {
 	free(table);
 }
 
-struct syntax_field *create_syntax_field(const char *name) {
+struct syntax_field *create_syntax_field() {
 	struct syntax_field *field = malloc(sizeof(struct syntax_field));
 	syntax_node_init(&field->n, SNT_FIELD);
-	field->name = strdup(name);
+	field->tag = FIELD_INVALID;
+	field->name = NULL;
 	return field;
 }
 

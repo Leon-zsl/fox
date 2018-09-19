@@ -9,7 +9,7 @@ static void clear_handler(size_t key, void *value) {
 
 struct symbol *symbol_create(const char *name) {
 	struct symbol *s = malloc(sizeof(struct symbol));
-	s->name = strdup(name);
+	s->name = fox_strdup(name);
 	return s;
 }
 

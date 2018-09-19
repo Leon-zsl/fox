@@ -23,8 +23,8 @@ extern char *yytext;
 "local"					return LOCAL;
 
 "nil" 					return NIL;
-"false"					return FALSE;
-"true"					return TRUE;
+"true"					return BTRUE;
+"false"					return BFALSE;
 
 "if" 					return IF;
 "then" 					return THEN;
@@ -55,10 +55,10 @@ extern char *yytext;
 ">>"					return RSHIFT;
 "//"					return FDIV;
 
-[a-zA-Z_][a-zA-Z0-9_]* 	{ yylval.string = strdup(yytext); return NAME; }
+[a-zA-Z_][a-zA-Z0-9_]* 	{ yylval.string = fox_strdup(yytext); return NAME; }
 
-\"[^\"]*\" 				{ yylval.string = strdup(yytext); return STRING; }
-\'[^\']*\' 				{ yylval.string = strdup(yytext); return STRING; }
+\"[^\"]*\" 				{ yylval.string = fox_strdup(yytext); return STRING; }
+\'[^\']*\' 				{ yylval.string = fox_strdup(yytext); return STRING; }
 
 [0-9]+("."[0-9]*)? | 
 ([0-9]+)?"."[0-9]+ |
