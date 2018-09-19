@@ -28,7 +28,7 @@ all: lua $(TARGET)
 lua: lua_l.c lua_y.c
 
 clean:
-	rm -rf lua_l.c lua_y.c lua_y.h
+	rm -rf lua_l.c lua_y.c lua_y.h lua_y.output
 	rm -rf *.o
 	rm -rf $(TARGET)
 
