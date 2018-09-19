@@ -705,34 +705,48 @@ funcname:		basefuncname
 				}
 		;
 
-funcall:		prefixexp '(' arglist ')'
+funcall:		prefixexp arglist
 				{
 					struct syntax_functioncall *fcall = create_syntax_functioncall();
 					syntax_node_push_child_tail(&fcall->n, &($1->n));
-					syntax_node_push_child_tail(&fcall->n, &($3->n));
+					syntax_node_push_child_tail(&fcall->n, &($2->n));
 					$$ = fcall;
 				}
-		|		prefixexp ':' NAME '(' arglist ')'
+		|		prefixexp ':' NAME arglist
 				{
 					struct syntax_functioncall *fcall = create_syntax_functioncall();
 					fcall->name = $3;
 					syntax_node_push_child_tail(&fcall->n, &($1->n));
-					syntax_node_push_child_tail(&fcall->n, &($5->n));
+					syntax_node_push_child_tail(&fcall->n, &($4->n));
 					$$ = fcall;
 				}
 
-arglist:		/* empty */
+arglist:		'(' ')'
 				{
 					struct syntax_argument *arg = create_syntax_argument();
 					arg->tag = ARG_EMPTY;
 					$$ = arg;
 				}
-		|		explist
+		|		'(' explist ')'
 				{
 					struct syntax_argument *arg = create_syntax_argument();
 					arg->tag = ARG_NORMAL;
-					syntax_node_push_child_tail(&arg->n, &($1->n));
+					syntax_node_push_child_tail(&arg->n, &($2->n));
 					$$ = arg;
+				}
+		|		STRING
+				{
+					struct syntax_argument *arg = create_syntax_argument();
+					arg->tag = ARG_STRING;
+					arg->name = $1;
+					$$ = arg;		
+				}
+		|		table
+				{
+					struct syntax_argument *arg = create_syntax_argument();
+					arg->tag = ARG_TABLE;
+					syntax_node_push_child_tail(&arg->n, &($1->n));
+					$$ = arg;					
 				}
 		;
 

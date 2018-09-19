@@ -166,9 +166,9 @@ struct syntax_functioncall {
 enum syntax_argument_tag {
 	ARG_INVALID,
 	ARG_EMPTY,
+	ARG_NORMAL,	
 	ARG_STRING,
 	ARG_TABLE,
-	ARG_NORMAL,
 };
 
 struct syntax_argument {
