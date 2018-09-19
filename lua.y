@@ -48,42 +48,42 @@ struct symbol_table *parse_table = NULL;
 %token					NIL BTRUE BFALSE						
 
 %token					IF THEN ELSE ELSEIF WHILE DO REPEAT UNTIL FOR BREAK END RETURN GOTO IN LABEL
-%token					AND OR GE LE EQ NE CONC DOTS SHIFT_LEFT LSHIFT RSHIFT FDIV
-%token 					NOT '#' '~'
+%token					AND OR GE LE EQ NE CONC DOTS LSHIFT RSHIFT FDIV
 
 %token<string>			NAME STRING
 %token<number>			NUMBER
 
 %type<chunk>			chunk
 %type<block>			block
-				
-%type<stmt>				stat statlist retstat elsepart
-%type<exp>				exp explist prefixexp /* binexp unexp */
 
-%type<string>			funcname stdfuncname
-%type<string>			namelist
-%type<string>			label
-%type<string>			pars						
-						
-%type<var> 				var varlist
-%type<func>				funcbody
+%type<stmt>				stmtlist stmt retstmt basestmt ifstmt elsestmt loopstmt varstmt funcstmt
+%type<exp>				explist exp prefixexp constexp primaryexp funcexp tableexp
+
+%type<var> 				varlist var
+%type<func>				funcdef
 %type<fcall>			funcall
 %type<arg>				args
 %type<tab>				table
-%type<field>			field fieldlist
+%type<field>			fieldlist field
+
+%type<string>			funcname basefuncname
+%type<string>			namelist
+%type<string>			label
+%type<string>			pars
 
 %left					OR
-%left					AND						
+%left					AND					
 %left 					EQ NE '<' '>' GE LE
 %left					'|'
 %left					'~'
 %left					'&'
 %left					LSHIFT RSHIFT
-%left					CONC																														
-%left					 '+' '-'
-%left					 '*' '/' '%' FDIV
+%left					CONC
+%left					'+' '-'
+%left					'*' '/' '%' FDIV
+%left 					NOT '#' OPNEG OPBNOT
 %left					'^'
-						
+												
 %%
 
 program:		chunk
@@ -104,19 +104,19 @@ block:			/* empty */
 				{
 					$$ = create_syntax_block();
 				}
-		|		retstat
+		|		retstmt
 				{
 					struct syntax_block *block = create_syntax_block();
 					syntax_node_push_child_tail(&block->n, &($1->n));
 					$$ = block;
 				}
-		|		statlist
+		|		stmtlist
 				{
 					struct syntax_block *block = create_syntax_block();
 					syntax_node_push_child_tail(&block->n, &($1->n));
 					$$ = block;
 				}
-		|		statlist retstat
+		|		stmtlist retstmt
 				{
 					struct syntax_block *block = create_syntax_block();
 					syntax_node_push_child_tail(&block->n, &($1->n));
@@ -125,18 +125,41 @@ block:			/* empty */
 				}
 		;
 
-statlist:		stat
-				{
-					$$ = $1;
-				}
-		|		statlist stat
+stmtlist:		stmt
+		|		stmtlist stmt
 				{
 					syntax_node_push_sibling_tail(&($1->n), &($2->n));
 					$$ = $1;
 				}
 		;
 
-stat:			';'
+stmt:			basestmt
+		|		loopstmt
+		|		ifstmt
+		|		varstmt
+		|		funcstmt				
+		;
+
+retstmt:		RETURN retend
+				{
+					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->tag = STMT_RETURN;
+					$$ = stmt;
+				}
+		|		RETURN explist retend
+				{
+					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->tag = STMT_RETURN;
+					syntax_node_push_child_tail(&stmt->n, &($2->n));
+					$$ = stmt;
+				}
+		;
+
+retend:		/* empty*/
+		|		';'
+		;
+
+basestmt:		';'
 				{
 					struct syntax_statement *stmt = create_syntax_statement();
 					stmt->tag = STMT_EMPTY;
@@ -162,60 +185,16 @@ stat:			';'
 					stmt->value.name = $2;
 					$$ = stmt;			
 				}
-		|		varlist '=' explist
-				{
-					struct syntax_statement *stmt = create_syntax_statement();
-					stmt->tag = STMT_VAR;
-					syntax_node_push_child_tail(&stmt->n, &($1->n));
-					syntax_node_push_child_tail(&stmt->n, &($3->n));
-					$$ = stmt;
-				}
-		|		funcall
-				{
-					struct syntax_statement *stmt = create_syntax_statement();
-					stmt->tag = STMT_FCALL;
-					syntax_node_push_child_tail(&stmt->n, &($1->n));
-					$$ = stmt;
-				}
-		|		FUNCTION funcname funcbody
-				{
-					struct syntax_statement *stmt = create_syntax_statement();
-					stmt->tag = STMT_FUNC;
-					stmt->value.name = $2;
-					syntax_node_push_child_tail(&stmt->n, &($3->n));
-					$$ = stmt;
-				}
-		|		LOCAL FUNCTION funcname funcbody
-				{
-					struct syntax_statement *stmt = create_syntax_statement();
-					stmt->tag = STMT_LOCAL_FUNC;
-					stmt->value.name = $3;
-					syntax_node_push_child_tail(&stmt->n, &($4->n));
-					$$ = stmt;
-				}
-		|		LOCAL namelist
-				{
-					struct syntax_statement *stmt = create_syntax_statement();
-					stmt->tag = STMT_LOCAL_VAR;
-					stmt->value.name = $2;
-					$$ = stmt;
-				}
-		|		LOCAL namelist '=' explist
-				{
-					struct syntax_statement *stmt = create_syntax_statement();
-					stmt->tag = STMT_LOCAL_VAR;
-					stmt->value.name = $2;
-					syntax_node_push_child_tail(&stmt->n, &($4->n));
-					$$ = stmt;
-				}
 		|		DO block END
 				{
 					struct syntax_statement *stmt = create_syntax_statement();
 					stmt->tag = STMT_DO;
 					syntax_node_push_child_tail(&stmt->n, &($2->n));
 					$$ = stmt;
-				}
-		|		WHILE exp DO block END
+				}				
+		;
+
+loopstmt:		WHILE exp DO block END
 				{
 					struct syntax_statement *stmt = create_syntax_statement();
 					stmt->tag = STMT_WHILE;
@@ -261,37 +240,20 @@ stat:			';'
 					syntax_node_push_child_tail(&stmt->n, &($8->n));
 					$$ = stmt;					
 				}
-		|		IF exp THEN block elsepart END
+		;
+
+ifstmt:			IF exp THEN block elsestmt END
 				{
 					struct syntax_statement *stmt = create_syntax_statement();
 					stmt->tag = STMT_IF;
 					syntax_node_push_child_tail(&stmt->n, &($2->n));
 					syntax_node_push_child_tail(&stmt->n, &($4->n));
-					syntax_node_push_child_tail(&stmt->n, &($5->n));					
+					syntax_node_push_child_tail(&stmt->n, &($5->n));
 					$$ = stmt;
 				}
 		;
 
-retstat:		RETURN retend
-				{
-					struct syntax_statement *ret = create_syntax_statement();
-					ret->tag = STMT_RETURN;
-					$$ = ret;
-				}
-		|		RETURN explist retend
-				{
-					struct syntax_statement *ret = create_syntax_statement();
-					ret->tag = STMT_RETURN;
-					syntax_node_push_child_tail(&ret->n, &($2->n));
-					$$ = ret;
-				}
-		;
-
-retend:		/* empty*/
-		|		';'
-		;
-
-elsepart:		/* empty */
+elsestmt:		/* empty */
 				{
 					struct syntax_statement *stmt = create_syntax_statement();
 					stmt->tag = STMT_EMPTY;
@@ -304,13 +266,63 @@ elsepart:		/* empty */
 					syntax_node_push_child_tail(&stmt->n, &($2->n));
 					$$ = stmt;		
 				}
-		|		ELSEIF exp THEN block elsepart
+		|		ELSEIF exp THEN block elsestmt
 				{
 					struct syntax_statement *stmt = create_syntax_statement();
 					stmt->tag = STMT_ELSEIF;
 					syntax_node_push_child_tail(&stmt->n, &($2->n));
 					syntax_node_push_child_tail(&stmt->n, &($4->n));
 					syntax_node_push_child_tail(&stmt->n, &($5->n));
+					$$ = stmt;
+				}
+		;
+
+varstmt:		LOCAL namelist
+				{
+					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->tag = STMT_LOCAL_VAR;
+					stmt->value.name = $2;
+					$$ = stmt;
+				}
+		|		LOCAL namelist '=' explist
+				{
+					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->tag = STMT_LOCAL_VAR;
+					stmt->value.name = $2;
+					syntax_node_push_child_tail(&stmt->n, &($4->n));
+					$$ = stmt;
+				}
+		|		varlist '=' explist
+				{
+					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->tag = STMT_VAR;
+					syntax_node_push_child_tail(&stmt->n, &($1->n));
+					syntax_node_push_child_tail(&stmt->n, &($3->n));
+					$$ = stmt;
+				}				
+		;
+
+funcstmt:		funcall
+				{
+					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->tag = STMT_FCALL;
+					syntax_node_push_child_tail(&stmt->n, &($1->n));
+					$$ = stmt;
+				}
+		|		FUNCTION funcname funcdef
+				{
+					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->tag = STMT_FUNC;
+					stmt->value.name = $2;
+					syntax_node_push_child_tail(&stmt->n, &($3->n));
+					$$ = stmt;
+				}
+		|		LOCAL FUNCTION funcname funcdef
+				{
+					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->tag = STMT_LOCAL_FUNC;
+					stmt->value.name = $3;
+					syntax_node_push_child_tail(&stmt->n, &($4->n));
 					$$ = stmt;
 				}
 		;
@@ -374,7 +386,37 @@ explist:		exp
 				}
 		;
 
-exp:			NIL
+exp:			prefixexp
+		|		constexp
+		|		primaryexp
+		|		funcexp
+		|		tableexp
+		;
+
+prefixexp:		var
+				{
+					struct syntax_expression *exp = create_syntax_expression();
+					exp->tag = EXP_VAR;
+					syntax_node_push_child_tail(&exp->n, &($1->n));
+					$$ = exp;
+				}
+		|		funcall
+				{
+					struct syntax_expression *exp = create_syntax_expression();
+					exp->tag = EXP_FCALL;
+					syntax_node_push_child_tail(&exp->n, &($1->n));
+					$$ = exp;
+				}
+		|		'(' exp ')'
+				{
+					struct syntax_expression *exp = create_syntax_expression();
+					exp->tag = EXP_PARENTHESIS;
+					syntax_node_push_child_tail(&exp->n, &($2->n));
+					$$ = exp;
+				}
+		;
+
+constexp:		NIL
 				{
 					struct syntax_expression *exp = create_syntax_expression();
 					exp->tag = EXP_NIL;
@@ -412,59 +454,226 @@ exp:			NIL
 					exp->tag = EXP_DOTS;
 					$$ = exp;					
 				}
-		|		FUNCTION funcbody
+		;
+
+primaryexp:		exp '+' exp
+				{
+					struct syntax_expression *exp = create_syntax_expression();
+					exp->tag = EXP_ADD;
+					syntax_node_push_child_tail(&exp->n, &($1->n));
+					syntax_node_push_child_tail(&exp->n, &($3->n));
+					$$ = exp;
+				}
+		|		exp '-' exp
+				{
+					struct syntax_expression *exp = create_syntax_expression();
+					exp->tag = EXP_SUB;
+					syntax_node_push_child_tail(&exp->n, &($1->n));
+					syntax_node_push_child_tail(&exp->n, &($3->n));
+					$$ = exp;
+				}
+		|		exp '*' exp
+				{
+					struct syntax_expression *exp = create_syntax_expression();
+					exp->tag = EXP_MUL;
+					syntax_node_push_child_tail(&exp->n, &($1->n));
+					syntax_node_push_child_tail(&exp->n, &($3->n));
+					$$ = exp;
+				}
+		|		exp '/' exp
+				{
+					struct syntax_expression *exp = create_syntax_expression();
+					exp->tag = EXP_DIV;
+					syntax_node_push_child_tail(&exp->n, &($1->n));
+					syntax_node_push_child_tail(&exp->n, &($3->n));
+					$$ = exp;
+				}
+		|		exp FDIV exp
+				{
+					struct syntax_expression *exp = create_syntax_expression();
+					exp->tag = EXP_FDIV;
+					syntax_node_push_child_tail(&exp->n, &($1->n));
+					syntax_node_push_child_tail(&exp->n, &($3->n));
+					$$ = exp;
+				}
+		|		exp '^' exp
+				{
+					struct syntax_expression *exp = create_syntax_expression();
+					exp->tag = EXP_EXP;
+					syntax_node_push_child_tail(&exp->n, &($1->n));
+					syntax_node_push_child_tail(&exp->n, &($3->n));
+					$$ = exp;
+				}
+		|		exp '%' exp
+				{
+					struct syntax_expression *exp = create_syntax_expression();
+					exp->tag = EXP_MOD;
+					syntax_node_push_child_tail(&exp->n, &($1->n));
+					syntax_node_push_child_tail(&exp->n, &($3->n));
+					$$ = exp;
+				}
+		|		exp '&' exp
+				{
+					struct syntax_expression *exp = create_syntax_expression();
+					exp->tag = EXP_BAND;
+					syntax_node_push_child_tail(&exp->n, &($1->n));
+					syntax_node_push_child_tail(&exp->n, &($3->n));
+					$$ = exp;
+				}
+		|		exp '|' exp
+				{
+					struct syntax_expression *exp = create_syntax_expression();
+					exp->tag = EXP_BOR;
+					syntax_node_push_child_tail(&exp->n, &($1->n));
+					syntax_node_push_child_tail(&exp->n, &($3->n));
+					$$ = exp;
+				}
+		|		exp '~' exp
+				{
+					struct syntax_expression *exp = create_syntax_expression();
+					exp->tag = EXP_XOR;
+					syntax_node_push_child_tail(&exp->n, &($1->n));
+					syntax_node_push_child_tail(&exp->n, &($3->n));
+					$$ = exp;
+				}
+		|		exp LSHIFT exp
+				{
+					struct syntax_expression *exp = create_syntax_expression();
+					exp->tag = EXP_LSHIFT;
+					syntax_node_push_child_tail(&exp->n, &($1->n));
+					syntax_node_push_child_tail(&exp->n, &($3->n));
+					$$ = exp;
+				}
+		|		exp RSHIFT exp
+				{
+					struct syntax_expression *exp = create_syntax_expression();
+					exp->tag = EXP_RSHIFT;
+					syntax_node_push_child_tail(&exp->n, &($1->n));
+					syntax_node_push_child_tail(&exp->n, &($3->n));
+					$$ = exp;
+				}
+		|		exp CONC exp
+				{
+					struct syntax_expression *exp = create_syntax_expression();
+					exp->tag = EXP_CONC;
+					syntax_node_push_child_tail(&exp->n, &($1->n));
+					syntax_node_push_child_tail(&exp->n, &($3->n));
+					$$ = exp;
+				}
+		|		exp '<' exp
+				{
+					struct syntax_expression *exp = create_syntax_expression();
+					exp->tag = EXP_LESS;
+					syntax_node_push_child_tail(&exp->n, &($1->n));
+					syntax_node_push_child_tail(&exp->n, &($3->n));
+					$$ = exp;
+				}
+		|		exp '>' exp
+				{
+					struct syntax_expression *exp = create_syntax_expression();
+					exp->tag = EXP_GREATER;
+					syntax_node_push_child_tail(&exp->n, &($1->n));
+					syntax_node_push_child_tail(&exp->n, &($3->n));
+					$$ = exp;
+				}
+		|		exp LE exp
+				{
+					struct syntax_expression *exp = create_syntax_expression();
+					exp->tag = EXP_LE;
+					syntax_node_push_child_tail(&exp->n, &($1->n));
+					syntax_node_push_child_tail(&exp->n, &($3->n));
+					$$ = exp;
+				}
+		|		exp GE exp
+				{
+					struct syntax_expression *exp = create_syntax_expression();
+					exp->tag = EXP_GE;
+					syntax_node_push_child_tail(&exp->n, &($1->n));
+					syntax_node_push_child_tail(&exp->n, &($3->n));
+					$$ = exp;
+				}
+		|		exp EQ exp
+				{
+					struct syntax_expression *exp = create_syntax_expression();
+					exp->tag = EXP_EQ;
+					syntax_node_push_child_tail(&exp->n, &($1->n));
+					syntax_node_push_child_tail(&exp->n, &($3->n));
+					$$ = exp;
+				}
+		|		exp NE exp
+				{
+					struct syntax_expression *exp = create_syntax_expression();
+					exp->tag = EXP_NE;
+					syntax_node_push_child_tail(&exp->n, &($1->n));
+					syntax_node_push_child_tail(&exp->n, &($3->n));
+					$$ = exp;
+				}
+		|		exp AND exp
+				{
+					struct syntax_expression *exp = create_syntax_expression();
+					exp->tag = EXP_AND;
+					syntax_node_push_child_tail(&exp->n, &($1->n));
+					syntax_node_push_child_tail(&exp->n, &($3->n));
+					$$ = exp;
+				}
+		|		exp OR exp
+				{
+					struct syntax_expression *exp = create_syntax_expression();
+					exp->tag = EXP_OR;
+					syntax_node_push_child_tail(&exp->n, &($1->n));
+					syntax_node_push_child_tail(&exp->n, &($3->n));
+					$$ = exp;
+				}
+		|		'~' exp %prec OPBNOT
+				{
+					struct syntax_expression *exp = create_syntax_expression();
+					exp->tag = EXP_BNOT;
+					syntax_node_push_child_tail(&exp->n, &($2->n));
+					$$ = exp;
+				}
+		|		'-' exp %prec OPNEG
+				{
+					struct syntax_expression *exp = create_syntax_expression();
+					exp->tag = EXP_NEG;
+					syntax_node_push_child_tail(&exp->n, &($2->n));
+					$$ = exp;
+				}				
+		|		NOT exp
+				{
+					struct syntax_expression *exp = create_syntax_expression();
+					exp->tag = EXP_NOT;
+					syntax_node_push_child_tail(&exp->n, &($2->n));
+					$$ = exp;
+				}
+		|		'#' exp
+				{
+					struct syntax_expression *exp = create_syntax_expression();
+					exp->tag = EXP_LEN;
+					syntax_node_push_child_tail(&exp->n, &($2->n));
+					$$ = exp;
+				}
+		;
+
+funcexp:		FUNCTION funcdef
 				{
 					struct syntax_expression *exp = create_syntax_expression();
 					exp->tag = EXP_FUNC;
 					syntax_node_push_child_tail(&exp->n, &($2->n));
 					$$ = exp;
 				}
-		|		table
+		;
+
+tableexp:		table
 				{
 					struct syntax_expression *exp = create_syntax_expression();
 					exp->tag = EXP_TABLE;
 					syntax_node_push_child_tail(&exp->n, &($1->n));
 					$$ = exp;
 				}
-		|		prefixexp
-				{
-					$$ = $1;
-				}
-		/* |		binexp */
-		/* 		{ */
-		/* 			$$ = $1; */
-		/* 		} */
-		/* |		unexp */
-		/* 		{ */
-		/* 			$$ = $1; */
-		/* 		} */
 		;
 
-prefixexp:		var
-				{
-					struct syntax_expression *exp = create_syntax_expression();
-					exp->tag = EXP_VAR;
-					syntax_node_push_child_tail(&exp->n, &($1->n));
-					$$ = exp;
-				}
-		|		funcall
-				{
-					struct syntax_expression *exp = create_syntax_expression();
-					exp->tag = EXP_FCALL;
-					syntax_node_push_child_tail(&exp->n, &($1->n));
-					$$ = exp;
-				}
-		|		'(' exp ')'
-				{
-					struct syntax_expression *exp = create_syntax_expression();
-					exp->tag = EXP_PARENTHESIS;
-					syntax_node_push_child_tail(&exp->n, &($2->n));
-					$$ = exp;
-				}
-		;
-
-stdfuncname:	NAME
-		|		stdfuncname '.' NAME
+basefuncname:	NAME
+		|		basefuncname '.' NAME
 				{
 					char *s0 = fox_strcat($1, ".");
 					char *s1 = fox_strcat(s0, $3);
@@ -475,64 +684,50 @@ stdfuncname:	NAME
 				}
 		;
 
-funcname:		stdfuncname
-		|		stdfuncname ':' NAME
+funcname:		basefuncname
+		|		basefuncname ':' NAME
 				{
 					char *s0 = fox_strcat($1, ":");
 					char *s1 = fox_strcat(s0, $3);
 					free($1);
 					free($3);
 					free(s0);
-					$$ = s1;					
+					$$ = s1;
 				}
 		;
 
-funcall:		prefixexp args
+funcall:		prefixexp '(' args ')'
 				{
 					struct syntax_functioncall *fcall = create_syntax_functioncall();
 					syntax_node_push_child_tail(&fcall->n, &($1->n));
-					syntax_node_push_child_tail(&fcall->n, &($2->n));
+					syntax_node_push_child_tail(&fcall->n, &($3->n));
 					$$ = fcall;
 				}
-		|		prefixexp ':' NAME args
+		|		prefixexp ':' NAME '(' args ')'
 				{
 					struct syntax_functioncall *fcall = create_syntax_functioncall();
 					fcall->name = $3;
 					syntax_node_push_child_tail(&fcall->n, &($1->n));
-					syntax_node_push_child_tail(&fcall->n, &($4->n));
+					syntax_node_push_child_tail(&fcall->n, &($5->n));
 					$$ = fcall;
 				}
 
-args:			'(' ')'
+args:			/* empty */
 				{
 					struct syntax_argument *arg = create_syntax_argument();
 					arg->tag = ARG_EMPTY;
 					$$ = arg;
 				}
-		|		'(' explist ')'
+		|		explist
 				{
 					struct syntax_argument *arg = create_syntax_argument();
 					arg->tag = ARG_NORMAL;
-					syntax_node_push_child_tail(&arg->n, &($2->n));
-					$$ = arg;
-				}
-		|		table
-				{
-					struct syntax_argument *arg = create_syntax_argument();
-					arg->tag = ARG_TABLE;
 					syntax_node_push_child_tail(&arg->n, &($1->n));
-					$$ = arg;		
-				}
-		|		STRING
-				{
-					struct syntax_argument *arg = create_syntax_argument();
-					arg->tag = ARG_STRING;
-					arg->name = $1;
 					$$ = arg;
 				}
 		;
 
-funcbody:		'(' ')' block END
+funcdef:		'(' ')' block END
 				{
 					struct syntax_function *func = create_syntax_function();
 					syntax_node_push_child_tail(&func->n, &($3->n));
@@ -616,205 +811,6 @@ fieldsep:		','
 		|		';'
 		;
 
-/* binexp:			exp '+' exp */
-/* 				{ */
-/* 					struct syntax_expression *exp = create_syntax_expression(); */
-/* 					exp->tag = EXP_ADD; */
-/* 					syntax_node_push_child_tail(&exp->n, &($1->n)); */
-/* 					syntax_node_push_child_tail(&exp->n, &($3->n)); */
-/* 					$$ = exp; */
-/* 				} */
-/* 		|		exp '-' exp */
-/* 				{ */
-/* 					struct syntax_expression *exp = create_syntax_expression(); */
-/* 					exp->tag = EXP_SUB; */
-/* 					syntax_node_push_child_tail(&exp->n, &($1->n)); */
-/* 					syntax_node_push_child_tail(&exp->n, &($3->n)); */
-/* 					$$ = exp; */
-/* 				} */
-/* 		|		exp '*' exp */
-/* 				{ */
-/* 					struct syntax_expression *exp = create_syntax_expression(); */
-/* 					exp->tag = EXP_MUL; */
-/* 					syntax_node_push_child_tail(&exp->n, &($1->n)); */
-/* 					syntax_node_push_child_tail(&exp->n, &($3->n)); */
-/* 					$$ = exp; */
-/* 				} */
-/* 		|		exp '/' exp */
-/* 				{ */
-/* 					struct syntax_expression *exp = create_syntax_expression(); */
-/* 					exp->tag = EXP_DIV; */
-/* 					syntax_node_push_child_tail(&exp->n, &($1->n)); */
-/* 					syntax_node_push_child_tail(&exp->n, &($3->n)); */
-/* 					$$ = exp; */
-/* 				} */
-/* 		|		exp FDIV exp */
-/* 				{ */
-/* 					struct syntax_expression *exp = create_syntax_expression(); */
-/* 					exp->tag = EXP_FDIV; */
-/* 					syntax_node_push_child_tail(&exp->n, &($1->n)); */
-/* 					syntax_node_push_child_tail(&exp->n, &($3->n)); */
-/* 					$$ = exp; */
-/* 				} */
-/* 		|		exp '^' exp */
-/* 				{ */
-/* 					struct syntax_expression *exp = create_syntax_expression(); */
-/* 					exp->tag = EXP_EXP; */
-/* 					syntax_node_push_child_tail(&exp->n, &($1->n)); */
-/* 					syntax_node_push_child_tail(&exp->n, &($3->n)); */
-/* 					$$ = exp; */
-/* 				} */
-/* 		|		exp '%' exp */
-/* 				{ */
-/* 					struct syntax_expression *exp = create_syntax_expression(); */
-/* 					exp->tag = EXP_MOD; */
-/* 					syntax_node_push_child_tail(&exp->n, &($1->n)); */
-/* 					syntax_node_push_child_tail(&exp->n, &($3->n)); */
-/* 					$$ = exp; */
-/* 				} */
-/* 		|		exp '&' exp */
-/* 				{ */
-/* 					struct syntax_expression *exp = create_syntax_expression(); */
-/* 					exp->tag = EXP_BAND; */
-/* 					syntax_node_push_child_tail(&exp->n, &($1->n)); */
-/* 					syntax_node_push_child_tail(&exp->n, &($3->n)); */
-/* 					$$ = exp; */
-/* 				} */
-/* 		|		exp '|' exp */
-/* 				{ */
-/* 					struct syntax_expression *exp = create_syntax_expression(); */
-/* 					exp->tag = EXP_BOR; */
-/* 					syntax_node_push_child_tail(&exp->n, &($1->n)); */
-/* 					syntax_node_push_child_tail(&exp->n, &($3->n)); */
-/* 					$$ = exp; */
-/* 				} */
-/* 		|		exp '~' exp */
-/* 				{ */
-/* 					struct syntax_expression *exp = create_syntax_expression(); */
-/* 					exp->tag = EXP_XOR; */
-/* 					syntax_node_push_child_tail(&exp->n, &($1->n)); */
-/* 					syntax_node_push_child_tail(&exp->n, &($3->n)); */
-/* 					$$ = exp; */
-/* 				} */
-/* 		|		exp LSHIFT exp */
-/* 				{ */
-/* 					struct syntax_expression *exp = create_syntax_expression(); */
-/* 					exp->tag = EXP_LSHIFT; */
-/* 					syntax_node_push_child_tail(&exp->n, &($1->n)); */
-/* 					syntax_node_push_child_tail(&exp->n, &($3->n)); */
-/* 					$$ = exp; */
-/* 				} */
-/* 		|		exp RSHIFT exp */
-/* 				{ */
-/* 					struct syntax_expression *exp = create_syntax_expression(); */
-/* 					exp->tag = EXP_RSHIFT; */
-/* 					syntax_node_push_child_tail(&exp->n, &($1->n)); */
-/* 					syntax_node_push_child_tail(&exp->n, &($3->n)); */
-/* 					$$ = exp; */
-/* 				} */
-/* 		|		exp CONC exp */
-/* 				{ */
-/* 					struct syntax_expression *exp = create_syntax_expression(); */
-/* 					exp->tag = EXP_CONC; */
-/* 					syntax_node_push_child_tail(&exp->n, &($1->n)); */
-/* 					syntax_node_push_child_tail(&exp->n, &($3->n)); */
-/* 					$$ = exp; */
-/* 				} */
-/* 		|		exp '<' exp */
-/* 				{ */
-/* 					struct syntax_expression *exp = create_syntax_expression(); */
-/* 					exp->tag = EXP_LESS; */
-/* 					syntax_node_push_child_tail(&exp->n, &($1->n)); */
-/* 					syntax_node_push_child_tail(&exp->n, &($3->n)); */
-/* 					$$ = exp; */
-/* 				} */
-/* 		|		exp '>' exp */
-/* 				{ */
-/* 					struct syntax_expression *exp = create_syntax_expression(); */
-/* 					exp->tag = EXP_GREATER; */
-/* 					syntax_node_push_child_tail(&exp->n, &($1->n)); */
-/* 					syntax_node_push_child_tail(&exp->n, &($3->n)); */
-/* 					$$ = exp; */
-/* 				} */
-/* 		|		exp LE exp */
-/* 				{ */
-/* 					struct syntax_expression *exp = create_syntax_expression(); */
-/* 					exp->tag = EXP_LE; */
-/* 					syntax_node_push_child_tail(&exp->n, &($1->n)); */
-/* 					syntax_node_push_child_tail(&exp->n, &($3->n)); */
-/* 					$$ = exp; */
-/* 				} */
-/* 		|		exp GE exp */
-/* 				{ */
-/* 					struct syntax_expression *exp = create_syntax_expression(); */
-/* 					exp->tag = EXP_GE; */
-/* 					syntax_node_push_child_tail(&exp->n, &($1->n)); */
-/* 					syntax_node_push_child_tail(&exp->n, &($3->n)); */
-/* 					$$ = exp; */
-/* 				} */
-/* 		|		exp EQ exp */
-/* 				{ */
-/* 					struct syntax_expression *exp = create_syntax_expression(); */
-/* 					exp->tag = EXP_EQ; */
-/* 					syntax_node_push_child_tail(&exp->n, &($1->n)); */
-/* 					syntax_node_push_child_tail(&exp->n, &($3->n)); */
-/* 					$$ = exp; */
-/* 				} */
-/* 		|		exp NE exp */
-/* 				{ */
-/* 					struct syntax_expression *exp = create_syntax_expression(); */
-/* 					exp->tag = EXP_NE; */
-/* 					syntax_node_push_child_tail(&exp->n, &($1->n)); */
-/* 					syntax_node_push_child_tail(&exp->n, &($3->n)); */
-/* 					$$ = exp; */
-/* 				} */
-/* 		|		exp AND exp */
-/* 				{ */
-/* 					struct syntax_expression *exp = create_syntax_expression(); */
-/* 					exp->tag = EXP_AND; */
-/* 					syntax_node_push_child_tail(&exp->n, &($1->n)); */
-/* 					syntax_node_push_child_tail(&exp->n, &($3->n)); */
-/* 					$$ = exp; */
-/* 				} */
-/* 		|		exp OR exp */
-/* 				{ */
-/* 					struct syntax_expression *exp = create_syntax_expression(); */
-/* 					exp->tag = EXP_OR; */
-/* 					syntax_node_push_child_tail(&exp->n, &($1->n)); */
-/* 					syntax_node_push_child_tail(&exp->n, &($3->n)); */
-/* 					$$ = exp; */
-/* 				} */
-/* 		; */
-
-/* unexp:			NOT exp */
-/* 				{ */
-/* 					struct syntax_expression *exp = create_syntax_expression(); */
-/* 					exp->tag = EXP_NOT; */
-/* 					syntax_node_push_child_tail(&exp->n, &($2->n)); */
-/* 					$$ = exp; */
-/* 				} */
-/* 		|		'#' exp */
-/* 				{ */
-/* 					struct syntax_expression *exp = create_syntax_expression(); */
-/* 					exp->tag = EXP_LEN; */
-/* 					syntax_node_push_child_tail(&exp->n, &($2->n)); */
-/* 					$$ = exp; */
-/* 				} */
-/* 		|		'~' exp */
-/* 				{ */
-/* 					struct syntax_expression *exp = create_syntax_expression(); */
-/* 					exp->tag = EXP_BNOT; */
-/* 					syntax_node_push_child_tail(&exp->n, &($2->n)); */
-/* 					$$ = exp;					 */
-/* 				} */
-/* 		|		'-' exp */
-/* 				{ */
-/* 					struct syntax_expression *exp = create_syntax_expression(); */
-/* 					exp->tag = EXP_NEG; */
-/* 					syntax_node_push_child_tail(&exp->n, &($2->n)); */
-/* 					$$ = exp;					 */
-/* 				} */
-/* 		; */
 %%
 
 /* 
