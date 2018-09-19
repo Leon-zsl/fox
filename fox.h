@@ -11,9 +11,10 @@
 #define FOX_VERSION "0.0.1"
 
 extern int log_level;
-#define LOG_ERR  2
-#define LOG_WARN 1
-#define LOG_MSG  0
+#define LOG_NO   0
+#define LOG_ERR  1
+#define LOG_WARN 2
+#define LOG_MSG  3
 
 #define log_error(fmt, ...) 			        \
 if(log_level >= LOG_ERR) {						\

@@ -5,10 +5,12 @@ LD=ld
 LEX=flex
 YACC=bison
 
+#DEFINES=-DDEBUG
 DEFINES=
 INCLUDES=
+CFLAGS=-Wall -g -O2 -std=c99 $(DEFINES) $(INCLUDES)
+
 LIBS=
-CFLAGS=-Wall -g -O2 -std=c99
 #LDFLAGS=-ll -ly
 LDFLAGS=
 
@@ -33,10 +35,10 @@ clean:
 	rm -rf $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC)  -o $@ $^ $(LDFLAGS) $(LIBS)
+	$(CC)  -o $@ $^ $(LDFLAGS)
 
 *.o: *.c
-	$(CC) -c $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 lua_y.c: lua.y
 	$(YACC) -d -v -o $@ $<

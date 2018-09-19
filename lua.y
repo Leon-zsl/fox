@@ -9,7 +9,10 @@ extern char yyfilename[];
 extern int yylineno;
 extern char *yytext;
 
+#ifdef DEBUG
 #define YYDEBUG 1
+#endif
+
 #if YYDEBUG
 int yydebug = 1;
 typedef union YYSTYPE YYSTYPE;

@@ -136,6 +136,11 @@ static int trans_syntax_statement(struct translator *t, struct syntax_statement 
 	switch(stmt->tag) {
 	case STMT_EMPTY:
 		break;
+	//todo:
+	case STMT_INVALID:
+	default:
+		log_error("unknown stmt tag:%d", stmt->tag);
+		break;
 	}
 	return trans_syntax_node_children(t, &stmt->n);
 }

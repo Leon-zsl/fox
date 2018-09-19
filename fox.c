@@ -9,7 +9,11 @@
 #include "syntax.h"
 #include "translator.h"
 
-int log_level = 0;
+#ifdef DEBUG
+int log_level = LOG_MSG;
+#else
+int log_level = LOG_ERR;
+#endif
 
 int ensure_path(const char *srcpath, const char *destpath) {
 	int val = access(srcpath, R_OK);
