@@ -75,7 +75,7 @@ static void translator_release(struct translator *t) {
 
 static int translate_syntax_node(struct translator *t, struct syntax_node *n);
 
-int translate(struct syntax_tree *tree, struct symbol_table *table, const char *filename) {
+int translate(const char *filename, struct syntax_tree *tree, struct symbol_table *table) {
 	if(!tree || !tree->root || !table) {
 		log_error("syntax tree or symbol table is invalid");
 		return 0;
