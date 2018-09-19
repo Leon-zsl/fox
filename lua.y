@@ -391,6 +391,13 @@ exp:			prefixexp
 		|		primaryexp
 		|		funcexp
 		|		tableexp
+		|		'(' exp ')'
+				{
+					struct syntax_expression *exp = create_syntax_expression();
+					exp->tag = EXP_PARENTHESIS;
+					syntax_node_push_child_tail(&exp->n, &($2->n));
+					$$ = exp;
+				}
 		;
 
 prefixexp:		var
@@ -407,13 +414,13 @@ prefixexp:		var
 					syntax_node_push_child_tail(&exp->n, &($1->n));
 					$$ = exp;
 				}
-		|		'(' exp ')'
-				{
-					struct syntax_expression *exp = create_syntax_expression();
-					exp->tag = EXP_PARENTHESIS;
-					syntax_node_push_child_tail(&exp->n, &($2->n));
-					$$ = exp;
-				}
+		/* |		'(' exp ')' */
+		/* 		{ */
+		/* 			struct syntax_expression *exp = create_syntax_expression(); */
+		/* 			exp->tag = EXP_PARENTHESIS; */
+		/* 			syntax_node_push_child_tail(&exp->n, &($2->n)); */
+		/* 			$$ = exp; */
+		/* 		} */
 		;
 
 constexp:		NIL
