@@ -81,11 +81,6 @@ int translate(const char *filename, struct syntax_tree *tree, struct symbol_tabl
 		return 0;
 	}
 
-	if(tree->root->type != SNT_CHUNK) {
-		log_error("syntax tree root is not chunk");
-		return 0;
-	}	
-
 	struct translator *t = translator_create(tree, table, filename);
 	if(!t) {
 		log_error("create translator failed");
@@ -104,6 +99,17 @@ int translate(const char *filename, struct syntax_tree *tree, struct symbol_tabl
 	log_info("translate lua program succeed:%s", filename);
 	return 1;
 }
+
+static int trans_syntax_chunk(struct translator *t, struct syntax_chunk *chunk);
+static int trans_syntax_block(struct translator *t, struct syntax_block *block);
+static int trans_syntax_statement(struct translator *t, struct syntax_statement *stmt);
+static int trans_syntax_expression(struct translator *t, struct syntax_expression *exp);
+static int trans_syntax_variable(struct translator *t, struct syntax_variable *var);
+static int trans_syntax_function(struct translator *t, struct syntax_function *func);
+static int trans_syntax_functioncall(struct translator *t, struct syntax_functioncall *fcall);
+static int trans_syntax_argument(struct translator *t, struct syntax_argument *arg);
+static int trans_syntax_table(struct translator *t, struct syntax_table *table);
+static int trans_syntax_field(struct translator *t, struct syntax_field *field);
 
 static int trans_syntax_node_children(struct translator *t, struct syntax_node *n) {
 	struct syntax_node *c = n->children;
@@ -125,7 +131,10 @@ static int trans_syntax_block(struct translator *t, struct syntax_block *block) 
 	log_info("trans block, depth:%d, children count:%d",
 			 syntax_node_depth(&block->n),
 			 syntax_node_children_count(&block->n));
-	return trans_syntax_node_children(t, &block->n);
+	fprintf(t->fp, "{\n");
+	int val = trans_syntax_node_children(t, &block->n);
+	fprintf(t->fp, "}\n");
+	return val;
 }
 
 static int trans_syntax_statement(struct translator *t, struct syntax_statement *stmt) {
@@ -135,16 +144,63 @@ static int trans_syntax_statement(struct translator *t, struct syntax_statement 
 			 stmt->tag);
 	switch(stmt->tag) {
 	case STMT_EMPTY:
-		break;
-	//todo:
+		return 1;
 	case STMT_LABEL:
-		log_error("unsupport stmt:");
+	case STMT_GOTO:
+		log_error("unsupport stmt:%s", syntax_statement_tag_string(stmt->tag));
+		return 0;
+	case STMT_BREAK:
+		fprintf(t->fp, "break");
+		return 1;
+	case STMT_RETURN:
+		fprintf(t->fp, "return ");
+		return trans_syntax_node_children(t, &stmt->n);
+	case STMT_DO:
+		return trans_syntax_node_children(t, &stmt->n);
+	case STMT_WHILE:
+	{
+		fprintf(t->fp, "while (");
+		int val = trans_syntax_expression(t, (struct syntax_expression *)syntax_node_child(&stmt->n, 0));
+		if(!val) return 0;
+		fprintf(t->fp, ")");
+		return trans_syntax_block(t, (struct syntax_block *)syntax_node_child(&stmt->n, 1));
+	}
+	case STMT_REPEAT:
+	{
+		fprintf(t->fp, "do ");
+		int val = trans_syntax_block(t, (struct syntax_block *)syntax_node_child(&stmt->n, 0));
+		if(!val) return 0;
+		fprintf(t->fp, "while (");
+		val = trans_syntax_expression(t, (struct syntax_expression *)syntax_node_child(&stmt->n, 1));
+		if(!val) return 0;
+		fprintf(t->fp, ")");
+		return 1;
+	}
+	case STMT_FOR_IN:
+	{
+		//todo:
+	}
+	case STMT_FOR_IT:
+	{
+		//todo:
+	}
+	case STMT_IF:
+	{
+		//todo:
+	}
+	case STMT_ELSE:
+	{
+		//todo:
+	}
+	case STMT_ELSEIF:
+	{
+		//todo:
+	}
 	case STMT_INVALID:
 	default:
-		log_error("unknown stmt:%d", stmt->tag);
-		break;
+		log_error("illeagal stmt:%d", stmt->tag);
+		return 0;
 	}
-	return trans_syntax_node_children(t, &stmt->n);
 }
 
 static int trans_syntax_function(struct translator *t, struct syntax_function *func) {

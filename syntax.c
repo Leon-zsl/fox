@@ -110,6 +110,28 @@ int syntax_node_sibling_count(struct syntax_node *n) {
 	return d;
 }
 
+struct syntax_node *syntax_node_child(struct syntax_node *n, int index)
+{
+	int idx = 0;
+	struct syntax_node *p = n->children;
+	while(idx <= index && p) {
+		p = p->next;
+		idx++;
+	}
+	return idx == index + 1 ? p : NULL;
+}
+
+struct syntax_node *syntax_node_sibling(struct syntax_node *n, int index)
+{
+	int idx = 0;
+	struct syntax_node *p = n->next;
+	while(idx <= index && p) {
+		p = p->next;
+		idx++;
+	}
+	return idx == index + 1 ? p : NULL;	
+}
+
 void syntax_node_walk(struct syntax_node *n, syntax_node_handler h) {
 	h(n);
 	struct syntax_node *c = n->children;

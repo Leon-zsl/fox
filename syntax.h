@@ -33,6 +33,8 @@ void syntax_node_push_sibling_tail(struct syntax_node *p, struct syntax_node *c)
 int syntax_node_depth(struct syntax_node *n);
 int syntax_node_children_count(struct syntax_node *n);
 int syntax_node_sibling_count(struct syntax_node *n);
+struct syntax_node *syntax_node_child(struct syntax_node *n, int index);
+struct syntax_node *syntax_node_sibling(struct syntax_node *n, int index);
 void syntax_node_walk(struct syntax_node *n, syntax_node_handler h);
 void syntax_node_release(struct syntax_node *n);
 

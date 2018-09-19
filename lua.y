@@ -314,6 +314,9 @@ funcstmt:		funcall
 				}
 		|		FUNCTION funcname funcdef
 				{
+					struct symbol *s = symbol_create($2);
+					symbol_table_insert(parse_table, s);
+
 					struct syntax_statement *stmt = create_syntax_statement();
 					stmt->tag = STMT_FUNC;
 					stmt->value.name = $2;
@@ -346,6 +349,9 @@ varlist:		var
 
 var:			NAME
 				{
+					struct symbol* s = symbol_create($1);
+					symbol_table_insert(parse_table, s);
+
 					struct syntax_variable *var = create_syntax_variable();
 					var->tag = VAR_NORMAL;
 					var->name = $1;
