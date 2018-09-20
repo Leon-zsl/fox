@@ -2,16 +2,16 @@
 #define __SYNTAX_H__
 
 enum syntax_node_type {
-	SNT_CHUNK,
-	SNT_BLOCK,
-	SNT_STATEMENT,
-	SNT_EXPRESSION,
-	SNT_VARIABLE,
-	SNT_FUNCTION,
-	SNT_FUNCTIONCALL,	
-	SNT_ARGUMENT,
-	SNT_TABLE,
-	SNT_FIELD,
+	STX_CHUNK,
+	STX_BLOCK,
+	STX_STATEMENT,
+	STX_EXPRESSION,
+	STX_VARIABLE,
+	STX_FUNCTION,
+	STX_FUNCTIONCALL,	
+	STX_ARGUMENT,
+	STX_TABLE,
+	STX_FIELD,
 };
 
 const char *syntax_node_type_string(enum syntax_node_type ty);
@@ -21,6 +21,7 @@ struct syntax_node {
 	struct syntax_node *parent;
 	struct syntax_node *children;
 	enum syntax_node_type type;
+	int lineno;
 };
 
 typedef void (*syntax_node_handler)(struct syntax_node *n);
@@ -166,6 +167,7 @@ struct syntax_variable {
 struct syntax_function {
 	struct syntax_node n;
 	char *name;
+	char *pars;
 };
 
 struct syntax_functioncall {

@@ -103,4 +103,42 @@ static inline char *fox_strcat(const char *s0, const char * s1) {
 	}
 	return d;
 }
+
+/* static inline char *fox_strrep(const char *s, const char *r0, const char *r1) { */
+/* 	if(!s) return NULL; */
+
+/* 	if(!r0 || !r1 || !strstr(s, r0) || strlen(s) == 0) { */
+/* 		char *d = malloc(strlen(s)+1); */
+/* 		if(strlen(s) == 0) d[0] = '\0'; */
+/* 		else strncpy(d, s, strlen(s)); */
+/* 		return d; */
+/* 	} */
+
+/* 	int lens = strlen(s); */
+/* 	int len0 = strlen(r0); */
+/* 	int len1 = strlen(r1); */
+/* 	int len = lens + len1 - len0; */
+/* 	char *d = malloc(len); */
+	
+/* 	char *substr = strstr(s, r0); */
+/* 	strncpy(d, s, substr - s); */
+/* 	strncpy(d + (substr - s), substr, len1); */
+/* 	strncpy(d + (substr - s + len1), substr + len0, lens - len0 - (substr -s)); */
+/* 	return d; */
+/* } */
+
+static inline char *fox_strrep(const char *s, char r0, char r1) {
+	if(!s) return NULL;
+	char *d = malloc(strlen(s)+1);
+	strcpy(d, s);
+	char *p = d;
+	while(*p != '\0') {
+		if(*p == r0) {
+			*p = r1;
+		}
+		p++;
+	}
+	return d;
+}
+
 #endif

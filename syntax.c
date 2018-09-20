@@ -23,6 +23,7 @@ void syntax_node_init(struct syntax_node *n, enum syntax_node_type ty) {
 	n->parent = NULL;
 	n->children = NULL;
 	n->type = ty;
+	n->lineno = 0;
 }
 
 void syntax_node_push_child_head(struct syntax_node *p, struct syntax_node *c) {
@@ -114,22 +115,22 @@ struct syntax_node *syntax_node_child(struct syntax_node *n, int index)
 {
 	int idx = 0;
 	struct syntax_node *p = n->children;
-	while(idx <= index && p) {
+	while(idx < index && p) {
 		p = p->next;
 		idx++;
 	}
-	return idx == index + 1 ? p : NULL;
+	return idx == index ? p : NULL;
 }
 
 struct syntax_node *syntax_node_sibling(struct syntax_node *n, int index)
 {
 	int idx = 0;
 	struct syntax_node *p = n->next;
-	while(idx <= index && p) {
+	while(idx < index && p) {
 		p = p->next;
 		idx++;
 	}
-	return idx == index + 1 ? p : NULL;	
+	return idx == index ? p : NULL;
 }
 
 void syntax_node_walk(struct syntax_node *n, syntax_node_handler h) {
@@ -284,34 +285,34 @@ static void syntax_node_release_children(struct syntax_node *n) {
 void syntax_node_release(struct syntax_node *n) {
 	void *node = n;
 	switch(n->type) {
-	case SNT_CHUNK:
+	case STX_CHUNK:
 		release_syntax_chunk(node);
 		break;
-	case SNT_BLOCK:
+	case STX_BLOCK:
 		release_syntax_block(node);
 		break;
-	case SNT_STATEMENT:
+	case STX_STATEMENT:
 		release_syntax_statement(node);
 		break;
-	case SNT_FUNCTION:
+	case STX_FUNCTION:
 		release_syntax_function(node);
 		break;
-	case SNT_FUNCTIONCALL:
+	case STX_FUNCTIONCALL:
 		release_syntax_functioncall(node);
 		break;
-	case SNT_EXPRESSION:
+	case STX_EXPRESSION:
 		release_syntax_expression(node);
 		break;
-	case SNT_TABLE:
+	case STX_TABLE:
 		release_syntax_table(node);
 		break;
-	case SNT_FIELD:
+	case STX_FIELD:
 		release_syntax_field(node);
 		break;
-	case SNT_VARIABLE:
+	case STX_VARIABLE:
 		release_syntax_variable(node);
 		break;
-	case SNT_ARGUMENT:
+	case STX_ARGUMENT:
 		release_syntax_argument(node);
 		break;
 	default:
@@ -324,7 +325,7 @@ void syntax_node_release(struct syntax_node *n) {
 
 struct syntax_chunk *create_syntax_chunk() {
 	struct syntax_chunk *chunk = malloc(sizeof(struct syntax_chunk));
-	syntax_node_init(&chunk->n, SNT_CHUNK);
+	syntax_node_init(&chunk->n, STX_CHUNK);
 	return chunk;
 }
 
@@ -335,7 +336,7 @@ void release_syntax_chunk(struct syntax_chunk *chunk) {
 
 struct syntax_block *create_syntax_block() {
 	struct syntax_block *block = malloc(sizeof(struct syntax_block));
-	syntax_node_init(&block->n, SNT_BLOCK);
+	syntax_node_init(&block->n, STX_BLOCK);
 	return block;
 }
 
@@ -346,7 +347,7 @@ void release_syntax_block(struct syntax_block *block) {
 
 struct syntax_statement *create_syntax_statement() {
 	struct syntax_statement *stmt = malloc(sizeof(struct syntax_statement));
-	syntax_node_init(&stmt->n, SNT_STATEMENT);
+	syntax_node_init(&stmt->n, STX_STATEMENT);
 	stmt->tag = STMT_INVALID;
 	stmt->value.name = NULL;
 	return stmt;
@@ -360,7 +361,7 @@ void release_syntax_statement(struct syntax_statement *stmt) {
 
 struct syntax_expression *create_syntax_expression() {
 	struct syntax_expression *exp = malloc(sizeof(struct syntax_expression));
-	syntax_node_init(&exp->n, SNT_EXPRESSION);
+	syntax_node_init(&exp->n, STX_EXPRESSION);
 	exp->tag = EXP_INVALID;
 	exp->value.string = NULL;
 	return exp;
@@ -374,7 +375,7 @@ void release_syntax_expression(struct syntax_expression *exp) {
 
 struct syntax_variable *create_syntax_variable() {
 	struct syntax_variable *var = malloc(sizeof(struct syntax_variable));
-	syntax_node_init(&var->n, SNT_VARIABLE);
+	syntax_node_init(&var->n, STX_VARIABLE);
 	var->tag = VAR_INVALID;
 	var->name = NULL;
 	return var;
@@ -388,20 +389,22 @@ void release_syntax_variable(struct syntax_variable *var) {
 
 struct syntax_function *create_syntax_function() {
 	struct syntax_function *func = malloc(sizeof(struct syntax_function));
-	syntax_node_init(&func->n, SNT_FUNCTION);
+	syntax_node_init(&func->n, STX_FUNCTION);
 	func->name = NULL;
+	func->pars = NULL;
 	return func;
 }
 
 void release_syntax_function(struct syntax_function *func) {
 	syntax_node_release_children(&func->n);
 	free(func->name);
+	free(func->pars);
 	free(func);
 }
 
 struct syntax_functioncall *create_syntax_functioncall() {
 	struct syntax_functioncall *fcall = malloc(sizeof(struct syntax_functioncall));
-	syntax_node_init(&fcall->n, SNT_FUNCTIONCALL);
+	syntax_node_init(&fcall->n, STX_FUNCTIONCALL);
 	fcall->name = NULL;
 	return fcall;
 }
@@ -414,7 +417,7 @@ void release_syntax_functioncall(struct syntax_functioncall *fcall) {
 
 struct syntax_argument *create_syntax_argument() {
 	struct syntax_argument *arg = malloc(sizeof(struct syntax_argument));
-	syntax_node_init(&arg->n, SNT_ARGUMENT);
+	syntax_node_init(&arg->n, STX_ARGUMENT);
 	arg->tag = ARG_INVALID;
 	arg->name = NULL;
 	return arg;
@@ -428,7 +431,7 @@ void release_syntax_argument(struct syntax_argument *arg) {
 
 struct syntax_table *create_syntax_table() {
 	struct syntax_table *table = malloc(sizeof(struct syntax_table));
-	syntax_node_init(&table->n, SNT_TABLE);
+	syntax_node_init(&table->n, STX_TABLE);
 	return table;
 }
 
@@ -439,7 +442,7 @@ void release_syntax_table(struct syntax_table *table) {
 
 struct syntax_field *create_syntax_field() {
 	struct syntax_field *field = malloc(sizeof(struct syntax_field));
-	syntax_node_init(&field->n, SNT_FIELD);
+	syntax_node_init(&field->n, STX_FIELD);
 	field->tag = FIELD_INVALID;
 	field->name = NULL;
 	return field;

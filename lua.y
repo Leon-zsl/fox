@@ -63,7 +63,7 @@ struct symbol_table *parse_table = NULL;
 %type<exp>				explist exp prefixexp constexp primaryexp funcexp tableexp
 
 %type<var> 				varlist var
-%type<func>				funcdef
+%type<func>				funcbody funcdef funclambda
 %type<fcall>			funcall
 %type<arg>				arglist
 %type<tab>				table
@@ -99,6 +99,7 @@ chunk:			block
 				{
 					struct syntax_chunk *chunk = create_syntax_chunk();
 					syntax_node_push_child_tail(&chunk->n, &($1->n));
+					chunk->n.lineno = yylineno;
 					$$ = chunk;
 				}
 		;
@@ -106,22 +107,26 @@ chunk:			block
 block:			/* empty */
 				{
 					$$ = create_syntax_block();
+					$$->n.lineno = yylineno;
 				}
 		|		retstmt
 				{
 					struct syntax_block *block = create_syntax_block();
+					block->n.lineno = yylineno;
 					syntax_node_push_child_tail(&block->n, &($1->n));
 					$$ = block;
 				}
 		|		stmtlist
 				{
 					struct syntax_block *block = create_syntax_block();
+					block->n.lineno = yylineno;
 					syntax_node_push_child_tail(&block->n, &($1->n));
 					$$ = block;
 				}
 		|		stmtlist retstmt
 				{
 					struct syntax_block *block = create_syntax_block();
+					block->n.lineno = yylineno;
 					syntax_node_push_child_tail(&block->n, &($1->n));
 					syntax_node_push_child_tail(&block->n, &($2->n));
 					$$ = block;
@@ -146,12 +151,14 @@ stmt:			basestmt
 retstmt:		RETURN retend
 				{
 					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->n.lineno = yylineno;
 					stmt->tag = STMT_RETURN;
 					$$ = stmt;
 				}
 		|		RETURN explist retend
 				{
 					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->n.lineno = yylineno;
 					stmt->tag = STMT_RETURN;
 					syntax_node_push_child_tail(&stmt->n, &($2->n));
 					$$ = stmt;
@@ -165,12 +172,14 @@ retend:		/* empty*/
 basestmt:		';'
 				{
 					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->n.lineno = yylineno;
 					stmt->tag = STMT_EMPTY;
 					$$ = stmt;
 				}
 		|		label
 				{
 					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->n.lineno = yylineno;
 					stmt->tag = STMT_LABEL;
 					stmt->value.name = $1;
 					$$ = stmt;
@@ -178,12 +187,14 @@ basestmt:		';'
 		|		BREAK
 				{
 					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->n.lineno = yylineno;
 					stmt->tag = STMT_BREAK;
 					$$ = stmt;
 				}
 		|		GOTO NAME
 				{
 					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->n.lineno = yylineno;
 					stmt->tag = STMT_GOTO;
 					stmt->value.name = $2;
 					$$ = stmt;			
@@ -191,6 +202,7 @@ basestmt:		';'
 		|		DO block END
 				{
 					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->n.lineno = yylineno;
 					stmt->tag = STMT_DO;
 					syntax_node_push_child_tail(&stmt->n, &($2->n));
 					$$ = stmt;
@@ -200,6 +212,7 @@ basestmt:		';'
 loopstmt:		WHILE exp DO block END
 				{
 					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->n.lineno = yylineno;
 					stmt->tag = STMT_WHILE;
 					syntax_node_push_child_tail(&stmt->n, &($2->n));
 					syntax_node_push_child_tail(&stmt->n, &($4->n));
@@ -208,6 +221,7 @@ loopstmt:		WHILE exp DO block END
 		|		REPEAT block UNTIL exp
 				{
 					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->n.lineno = yylineno;
 					stmt->tag = STMT_REPEAT;
 					syntax_node_push_child_tail(&stmt->n, &($2->n));
 					syntax_node_push_child_tail(&stmt->n, &($4->n));
@@ -216,6 +230,7 @@ loopstmt:		WHILE exp DO block END
 		|		FOR namelist IN explist DO block END
 				{
 					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->n.lineno = yylineno;
 					stmt->tag = STMT_FOR_IN;
 					stmt->value.name = $2;
 					syntax_node_push_child_tail(&stmt->n, &($4->n));
@@ -225,6 +240,7 @@ loopstmt:		WHILE exp DO block END
 		|		FOR NAME '=' exp ',' exp ',' exp DO block END
 				{
 					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->n.lineno = yylineno;
 					stmt->tag = STMT_FOR_IT;
 					stmt->value.name = $2;
 					syntax_node_push_child_tail(&stmt->n, &($4->n));
@@ -236,6 +252,7 @@ loopstmt:		WHILE exp DO block END
 		|		FOR NAME '=' exp ',' exp DO block END
 				{
 					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->n.lineno = yylineno;
 					stmt->tag = STMT_FOR_IT;
 					stmt->value.name = $2;
 					syntax_node_push_child_tail(&stmt->n, &($4->n));
@@ -248,6 +265,7 @@ loopstmt:		WHILE exp DO block END
 ifstmt:			IF exp THEN block elsestmt END
 				{
 					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->n.lineno = yylineno;
 					stmt->tag = STMT_IF;
 					syntax_node_push_child_tail(&stmt->n, &($2->n));
 					syntax_node_push_child_tail(&stmt->n, &($4->n));
@@ -259,12 +277,14 @@ ifstmt:			IF exp THEN block elsestmt END
 elsestmt:		/* empty */
 				{
 					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->n.lineno = yylineno;
 					stmt->tag = STMT_EMPTY;
 					$$ = stmt;
 				}
 		|		ELSE block
 				{
 					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->n.lineno = yylineno;
 					stmt->tag = STMT_ELSE;
 					syntax_node_push_child_tail(&stmt->n, &($2->n));
 					$$ = stmt;		
@@ -272,6 +292,7 @@ elsestmt:		/* empty */
 		|		ELSEIF exp THEN block elsestmt
 				{
 					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->n.lineno = yylineno;
 					stmt->tag = STMT_ELSEIF;
 					syntax_node_push_child_tail(&stmt->n, &($2->n));
 					syntax_node_push_child_tail(&stmt->n, &($4->n));
@@ -283,6 +304,7 @@ elsestmt:		/* empty */
 varstmt:		LOCAL namelist
 				{
 					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->n.lineno = yylineno;
 					stmt->tag = STMT_LOCAL_VAR;
 					stmt->value.name = $2;
 					$$ = stmt;
@@ -290,6 +312,7 @@ varstmt:		LOCAL namelist
 		|		LOCAL namelist '=' explist
 				{
 					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->n.lineno = yylineno;
 					stmt->tag = STMT_LOCAL_VAR;
 					stmt->value.name = $2;
 					syntax_node_push_child_tail(&stmt->n, &($4->n));
@@ -298,6 +321,7 @@ varstmt:		LOCAL namelist
 		|		varlist '=' explist
 				{
 					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->n.lineno = yylineno;
 					stmt->tag = STMT_VAR;
 					syntax_node_push_child_tail(&stmt->n, &($1->n));
 					syntax_node_push_child_tail(&stmt->n, &($3->n));
@@ -308,27 +332,32 @@ varstmt:		LOCAL namelist
 funcstmt:		funcall
 				{
 					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->n.lineno = yylineno;
 					stmt->tag = STMT_FCALL;
 					syntax_node_push_child_tail(&stmt->n, &($1->n));
 					$$ = stmt;
 				}
-		|		FUNCTION funcname funcdef
+		|		funcdef
 				{
-					struct symbol *s = symbol_create($2);
-					symbol_table_insert(parse_table, s);
-
 					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->n.lineno = yylineno;
 					stmt->tag = STMT_FUNC;
-					stmt->value.name = $2;
-					syntax_node_push_child_tail(&stmt->n, &($3->n));
+					syntax_node_push_child_tail(&stmt->n, &($1->n));
 					$$ = stmt;
+
+					const char *name = $1->name;
+					//only export top level names
+					if(!strstr(name, ".") && !strstr(name, ":")) {
+						struct symbol *s = symbol_create(name, &stmt->n);
+						symbol_table_insert(parse_table, s);
+					}
 				}
-		|		LOCAL FUNCTION funcname funcdef
+		|		LOCAL funcdef
 				{
 					struct syntax_statement *stmt = create_syntax_statement();
+					stmt->n.lineno = yylineno;
 					stmt->tag = STMT_LOCAL_FUNC;
-					stmt->value.name = $3;
-					syntax_node_push_child_tail(&stmt->n, &($4->n));
+					syntax_node_push_child_tail(&stmt->n, &($2->n));
 					$$ = stmt;
 				}
 		;
@@ -349,17 +378,19 @@ varlist:		var
 
 var:			NAME
 				{
-					struct symbol* s = symbol_create($1);
-					symbol_table_insert(parse_table, s);
-
 					struct syntax_variable *var = create_syntax_variable();
+					var->n.lineno = yylineno;
 					var->tag = VAR_NORMAL;
 					var->name = $1;
 					$$ = var;
+					
+					struct symbol* s = symbol_create($1, &var->n);
+					symbol_table_insert(parse_table, s);					
 				}
 		|		prefixexp '[' exp ']'
 				{
 					struct syntax_variable *var = create_syntax_variable();
+					var->n.lineno = yylineno;
 					var->tag = VAR_INDEX;
 					syntax_node_push_child_tail(&var->n, &($1->n));
 					syntax_node_push_child_tail(&var->n, &($3->n));
@@ -368,10 +399,11 @@ var:			NAME
 		|		prefixexp '.' NAME
 				{
 					struct syntax_variable *var = create_syntax_variable();
+					var->n.lineno = yylineno;
 					var->tag = VAR_KEY;
-					syntax_node_push_child_tail(&var->n, &($1->n));					
+					syntax_node_push_child_tail(&var->n, &($1->n));
 					var->name = $3;
-					$$ = var;					
+					$$ = var;	
 				}
 		;
 
@@ -403,6 +435,7 @@ exp:			prefixexp
 		|		'(' exp ')'
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_PARENTHESIS;
 					syntax_node_push_child_tail(&exp->n, &($2->n));
 					$$ = exp;
@@ -412,6 +445,7 @@ exp:			prefixexp
 prefixexp:		var
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_VAR;
 					syntax_node_push_child_tail(&exp->n, &($1->n));
 					$$ = exp;
@@ -419,6 +453,7 @@ prefixexp:		var
 		|		funcall
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_FCALL;
 					syntax_node_push_child_tail(&exp->n, &($1->n));
 					$$ = exp;
@@ -427,6 +462,7 @@ prefixexp:		var
 		|		'(' exp ')'
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_PARENTHESIS;
 					syntax_node_push_child_tail(&exp->n, &($2->n));
 					$$ = exp;
@@ -437,24 +473,28 @@ prefixexp:		var
 constexp:		NIL
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_NIL;
 					$$ = exp;
 				}
 		|		BTRUE
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_TRUE;
 					$$ = exp;
 				}
 		|		BFALSE
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_FALSE;
 					$$ = exp;
 				}
 		|		NUMBER
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_NUMBER;
 					exp->value.number = $1;
 					$$ = exp;					
@@ -462,6 +502,7 @@ constexp:		NIL
 		|		STRING
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_STRING;
 					exp->value.string = $1;
 					$$ = exp;
@@ -469,6 +510,7 @@ constexp:		NIL
 		|		DOTS
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_DOTS;
 					$$ = exp;					
 				}
@@ -477,6 +519,7 @@ constexp:		NIL
 primaryexp:		exp '+' exp
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_ADD;
 					syntax_node_push_child_tail(&exp->n, &($1->n));
 					syntax_node_push_child_tail(&exp->n, &($3->n));
@@ -485,6 +528,7 @@ primaryexp:		exp '+' exp
 		|		exp '-' exp
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_SUB;
 					syntax_node_push_child_tail(&exp->n, &($1->n));
 					syntax_node_push_child_tail(&exp->n, &($3->n));
@@ -493,6 +537,7 @@ primaryexp:		exp '+' exp
 		|		exp '*' exp
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_MUL;
 					syntax_node_push_child_tail(&exp->n, &($1->n));
 					syntax_node_push_child_tail(&exp->n, &($3->n));
@@ -501,6 +546,7 @@ primaryexp:		exp '+' exp
 		|		exp '/' exp
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_DIV;
 					syntax_node_push_child_tail(&exp->n, &($1->n));
 					syntax_node_push_child_tail(&exp->n, &($3->n));
@@ -509,6 +555,7 @@ primaryexp:		exp '+' exp
 		|		exp FDIV exp
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_FDIV;
 					syntax_node_push_child_tail(&exp->n, &($1->n));
 					syntax_node_push_child_tail(&exp->n, &($3->n));
@@ -517,6 +564,7 @@ primaryexp:		exp '+' exp
 		|		exp '^' exp
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_EXP;
 					syntax_node_push_child_tail(&exp->n, &($1->n));
 					syntax_node_push_child_tail(&exp->n, &($3->n));
@@ -525,6 +573,7 @@ primaryexp:		exp '+' exp
 		|		exp '%' exp
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_MOD;
 					syntax_node_push_child_tail(&exp->n, &($1->n));
 					syntax_node_push_child_tail(&exp->n, &($3->n));
@@ -533,6 +582,7 @@ primaryexp:		exp '+' exp
 		|		exp '&' exp
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_BAND;
 					syntax_node_push_child_tail(&exp->n, &($1->n));
 					syntax_node_push_child_tail(&exp->n, &($3->n));
@@ -541,6 +591,7 @@ primaryexp:		exp '+' exp
 		|		exp '|' exp
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_BOR;
 					syntax_node_push_child_tail(&exp->n, &($1->n));
 					syntax_node_push_child_tail(&exp->n, &($3->n));
@@ -549,6 +600,7 @@ primaryexp:		exp '+' exp
 		|		exp '~' exp
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_XOR;
 					syntax_node_push_child_tail(&exp->n, &($1->n));
 					syntax_node_push_child_tail(&exp->n, &($3->n));
@@ -557,6 +609,7 @@ primaryexp:		exp '+' exp
 		|		exp LSHIFT exp
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_LSHIFT;
 					syntax_node_push_child_tail(&exp->n, &($1->n));
 					syntax_node_push_child_tail(&exp->n, &($3->n));
@@ -565,6 +618,7 @@ primaryexp:		exp '+' exp
 		|		exp RSHIFT exp
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_RSHIFT;
 					syntax_node_push_child_tail(&exp->n, &($1->n));
 					syntax_node_push_child_tail(&exp->n, &($3->n));
@@ -573,6 +627,7 @@ primaryexp:		exp '+' exp
 		|		exp CONC exp
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_CONC;
 					syntax_node_push_child_tail(&exp->n, &($1->n));
 					syntax_node_push_child_tail(&exp->n, &($3->n));
@@ -581,6 +636,7 @@ primaryexp:		exp '+' exp
 		|		exp '<' exp
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_LESS;
 					syntax_node_push_child_tail(&exp->n, &($1->n));
 					syntax_node_push_child_tail(&exp->n, &($3->n));
@@ -589,6 +645,7 @@ primaryexp:		exp '+' exp
 		|		exp '>' exp
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_GREATER;
 					syntax_node_push_child_tail(&exp->n, &($1->n));
 					syntax_node_push_child_tail(&exp->n, &($3->n));
@@ -597,6 +654,7 @@ primaryexp:		exp '+' exp
 		|		exp LE exp
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_LE;
 					syntax_node_push_child_tail(&exp->n, &($1->n));
 					syntax_node_push_child_tail(&exp->n, &($3->n));
@@ -605,6 +663,7 @@ primaryexp:		exp '+' exp
 		|		exp GE exp
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_GE;
 					syntax_node_push_child_tail(&exp->n, &($1->n));
 					syntax_node_push_child_tail(&exp->n, &($3->n));
@@ -613,6 +672,7 @@ primaryexp:		exp '+' exp
 		|		exp EQ exp
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_EQ;
 					syntax_node_push_child_tail(&exp->n, &($1->n));
 					syntax_node_push_child_tail(&exp->n, &($3->n));
@@ -621,6 +681,7 @@ primaryexp:		exp '+' exp
 		|		exp NE exp
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_NE;
 					syntax_node_push_child_tail(&exp->n, &($1->n));
 					syntax_node_push_child_tail(&exp->n, &($3->n));
@@ -629,6 +690,7 @@ primaryexp:		exp '+' exp
 		|		exp AND exp
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_AND;
 					syntax_node_push_child_tail(&exp->n, &($1->n));
 					syntax_node_push_child_tail(&exp->n, &($3->n));
@@ -637,6 +699,7 @@ primaryexp:		exp '+' exp
 		|		exp OR exp
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_OR;
 					syntax_node_push_child_tail(&exp->n, &($1->n));
 					syntax_node_push_child_tail(&exp->n, &($3->n));
@@ -645,6 +708,7 @@ primaryexp:		exp '+' exp
 		|		'~' exp %prec OPBNOT
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_BNOT;
 					syntax_node_push_child_tail(&exp->n, &($2->n));
 					$$ = exp;
@@ -652,13 +716,15 @@ primaryexp:		exp '+' exp
 		|		'-' exp %prec OPNEG
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_NEG;
 					syntax_node_push_child_tail(&exp->n, &($2->n));
 					$$ = exp;
-				}				
+				}
 		|		NOT exp
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_NOT;
 					syntax_node_push_child_tail(&exp->n, &($2->n));
 					$$ = exp;
@@ -666,17 +732,19 @@ primaryexp:		exp '+' exp
 		|		'#' exp
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_LEN;
 					syntax_node_push_child_tail(&exp->n, &($2->n));
 					$$ = exp;
 				}
 		;
 
-funcexp:		FUNCTION funcdef
+funcexp:		funclambda
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_FUNC;
-					syntax_node_push_child_tail(&exp->n, &($2->n));
+					syntax_node_push_child_tail(&exp->n, &($1->n));
 					$$ = exp;
 				}
 		;
@@ -684,9 +752,23 @@ funcexp:		FUNCTION funcdef
 tableexp:		table
 				{
 					struct syntax_expression *exp = create_syntax_expression();
+					exp->n.lineno = yylineno;
 					exp->tag = EXP_TABLE;
 					syntax_node_push_child_tail(&exp->n, &($1->n));
 					$$ = exp;
+				}
+		;
+
+funcdef:		FUNCTION funcname funcbody
+				{
+					$3->name = $2;
+					$$ = $3;
+				}
+		;
+
+funclambda:		FUNCTION funcbody
+				{
+					$$ = $2;
 				}
 		;
 
@@ -714,61 +796,18 @@ funcname:		basefuncname
 				}
 		;
 
-funcall:		prefixexp arglist
-				{
-					struct syntax_functioncall *fcall = create_syntax_functioncall();
-					syntax_node_push_child_tail(&fcall->n, &($1->n));
-					syntax_node_push_child_tail(&fcall->n, &($2->n));
-					$$ = fcall;
-				}
-		|		prefixexp ':' NAME arglist
-				{
-					struct syntax_functioncall *fcall = create_syntax_functioncall();
-					fcall->name = $3;
-					syntax_node_push_child_tail(&fcall->n, &($1->n));
-					syntax_node_push_child_tail(&fcall->n, &($4->n));
-					$$ = fcall;
-				}
-
-arglist:		'(' ')'
-				{
-					struct syntax_argument *arg = create_syntax_argument();
-					arg->tag = ARG_EMPTY;
-					$$ = arg;
-				}
-		|		'(' explist ')'
-				{
-					struct syntax_argument *arg = create_syntax_argument();
-					arg->tag = ARG_NORMAL;
-					syntax_node_push_child_tail(&arg->n, &($2->n));
-					$$ = arg;
-				}
-		|		STRING
-				{
-					struct syntax_argument *arg = create_syntax_argument();
-					arg->tag = ARG_STRING;
-					arg->name = $1;
-					$$ = arg;		
-				}
-		|		table
-				{
-					struct syntax_argument *arg = create_syntax_argument();
-					arg->tag = ARG_TABLE;
-					syntax_node_push_child_tail(&arg->n, &($1->n));
-					$$ = arg;					
-				}
-		;
-
-funcdef:		'(' ')' block END
+funcbody:		'(' ')' block END
 				{
 					struct syntax_function *func = create_syntax_function();
+					func->n.lineno = yylineno;
 					syntax_node_push_child_tail(&func->n, &($3->n));
 					$$ = func;
 				}
 		|		'(' parlist ')' block END
 				{
 					struct syntax_function *func = create_syntax_function();
-					func->name = $2;
+					func->n.lineno = yylineno;
+					func->pars = $2;
 					syntax_node_push_child_tail(&func->n, &($4->n));
 					$$ = func;
 				}
@@ -789,15 +828,68 @@ parlist:		namelist
 				}
 		;
 
+funcall:		prefixexp arglist
+				{
+					struct syntax_functioncall *fcall = create_syntax_functioncall();
+					fcall->n.lineno = yylineno;
+					syntax_node_push_child_tail(&fcall->n, &($1->n));
+					syntax_node_push_child_tail(&fcall->n, &($2->n));
+					$$ = fcall;
+				}
+		|		prefixexp ':' NAME arglist
+				{
+					struct syntax_functioncall *fcall = create_syntax_functioncall();
+					fcall->n.lineno = yylineno;
+					fcall->name = $3;
+					syntax_node_push_child_tail(&fcall->n, &($1->n));
+					syntax_node_push_child_tail(&fcall->n, &($4->n));
+					$$ = fcall;
+				}
+
+arglist:		'(' ')'
+				{
+					struct syntax_argument *arg = create_syntax_argument();
+					arg->n.lineno = yylineno;
+					arg->tag = ARG_EMPTY;
+					$$ = arg;
+				}
+		|		'(' explist ')'
+				{
+					struct syntax_argument *arg = create_syntax_argument();
+					arg->n.lineno = yylineno;
+					arg->tag = ARG_NORMAL;
+					syntax_node_push_child_tail(&arg->n, &($2->n));
+					$$ = arg;
+				}
+		|		STRING
+				{
+					struct syntax_argument *arg = create_syntax_argument();
+					arg->n.lineno = yylineno;
+					arg->tag = ARG_STRING;
+					arg->name = $1;
+					$$ = arg;		
+				}
+		|		table
+				{
+					struct syntax_argument *arg = create_syntax_argument();
+					arg->n.lineno = yylineno;
+					arg->tag = ARG_TABLE;
+					syntax_node_push_child_tail(&arg->n, &($1->n));
+					$$ = arg;					
+				}
+		;
+
 table:			'{' fieldlist '}'
 				{
 					struct syntax_table *t = create_syntax_table();
+					t->n.lineno = yylineno;
 					syntax_node_push_child_tail(&(t->n), &($2->n));
 					$$ = t;
 				}
 		|		'{' '}'
 				{
 					struct syntax_table *t = create_syntax_table();
+					t->n.lineno = yylineno;
 					$$ = t;
 				}
 		;
@@ -817,6 +909,7 @@ fieldlist:		field
 field:			'[' exp ']' '=' exp
 				{
 					struct syntax_field * f = create_syntax_field();
+					f->n.lineno = yylineno;
 					f->tag = FIELD_INDEX;
 					syntax_node_push_child_tail(&f->n, &($2->n));	
 					syntax_node_push_child_tail(&f->n, &($5->n));
@@ -825,6 +918,7 @@ field:			'[' exp ']' '=' exp
 		|		NAME '=' exp
 				{
 					struct syntax_field * f = create_syntax_field();
+					f->n.lineno = yylineno;
 					f->tag = FIELD_KEY;
 					f->name = $1;
 					syntax_node_push_child_tail(&f->n, &($3->n));
@@ -833,6 +927,7 @@ field:			'[' exp ']' '=' exp
 		|		exp
 				{
 					struct syntax_field * f = create_syntax_field();
+					f->n.lineno = yylineno;
 					f->tag = FIELD_SINGLE;
 					syntax_node_push_child_tail(&f->n, &($1->n));
 					$$ = f;					

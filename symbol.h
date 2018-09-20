@@ -3,9 +3,10 @@
 
 struct symbol {
 	char *name;	/* name must be unique for unique symbol */
+	struct syntax_node *node;
 };
 
-struct symbol *symbol_create(const char *name);
+struct symbol *symbol_create(const char *name, struct syntax_node *node);
 void symbol_release(struct symbol *s);
 
 struct symbol_table {

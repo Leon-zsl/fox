@@ -2,14 +2,16 @@
 #include "list.h"
 #include "hmap.h"
 #include "symbol.h"
+#include "syntax.h"
 
 static void clear_handler(size_t key, void *value) {
 	symbol_release(value);
 }
 
-struct symbol *symbol_create(const char *name) {
+struct symbol *symbol_create(const char *name, struct syntax_node *node) {
 	struct symbol *s = malloc(sizeof(struct symbol));
 	s->name = fox_strdup(name);
+	s->node = node;
 	return s;
 }
 
