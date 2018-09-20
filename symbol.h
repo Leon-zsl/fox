@@ -20,4 +20,7 @@ void symbol_table_remove(struct symbol_table *t, struct symbol *s);
 struct symbol *symbol_table_get(struct symbol_table *t, const char *name);
 struct symbol *symbol_table_set(struct symbol_table *t, struct symbol *s);
 
+typedef void (*symbol_handler)(const char *name, struct symbol *s);
+void symbol_table_walk(struct symbol_table *t, symbol_handler h);
+
 #endif

@@ -50,6 +50,7 @@ struct translator {
 	struct syntax_tree *tree;
 	struct symbol_table *table;
 	FILE *fp;
+	bool retstmt;
 };
 
 static struct translator *translator_create(struct syntax_tree *tree,
@@ -65,6 +66,7 @@ static struct translator *translator_create(struct syntax_tree *tree,
 	t->tree = tree;
 	t->table = table;
 	t->fp = fp;
+	t->retstmt = FALSE;
 	return t;
 }
 
@@ -119,6 +121,16 @@ static int func_is_method(const char *funcname) {
 	return strstr(funcname, ":") != NULL;
 }
 
+static struct translator *translator = NULL;
+static void exports_handler(const char *name, struct symbol *s) {
+	if(translator) {
+		fprintf(translator->fp, name);
+		fprintf(translator->fp, ":");
+		fprintf(translator->fp, name);
+		fprintf(translator->fp, ",\n");
+	}
+}
+
 static int trans_syntax_node_children(struct translator *t, struct syntax_node *n) {
 	struct syntax_node *c = n->children;
 	while(c) {
@@ -129,7 +141,19 @@ static int trans_syntax_node_children(struct translator *t, struct syntax_node *
 }
 
 static int trans_syntax_chunk(struct translator *t, struct syntax_node *n) {
-	return trans_syntax_node_children(t, n);
+	int val = trans_syntax_node_children(t, n);
+	if(!val) return 0;
+
+	if(!t->retstmt) {
+		fprintf(t->fp, "\n\nmodule.exports = {\n");
+		translator = t;
+		symbol_table_walk(t->table, exports_handler);
+		fseek(t->fp, -2, SEEK_END);
+		//fprintf(t->fp, "  "); //eat the last ,\n
+		translator = NULL;
+		fprintf(t->fp, "\n}\n");
+	}
+	return 1;
 }
 
 static int trans_syntax_block(struct translator *t, struct syntax_node *n) {
@@ -137,6 +161,137 @@ static int trans_syntax_block(struct translator *t, struct syntax_node *n) {
 	int val = trans_syntax_node_children(t, n);
 	if(n->parent->type != STX_CHUNK) fprintf(t->fp, "\n}\n");
 	return val;
+}
+
+static int trans_local_assign(struct translator *t, struct syntax_statement *stmt) {
+	if(stmt->tag != STMT_LOCAL_VAR) {
+		log_error("trans local assign with illeagal stmt %d:%s",
+				  stmt->n.lineno,
+				  syntax_statement_tag_string(stmt->tag));
+		return 0;
+	}
+	
+	int ncnt = 1;
+	char *p = stmt->value.name;
+	while(*p != '\0') {
+		if(*p++ == ',') ncnt++;
+	}
+
+	int ecnt = syntax_node_children_count(&stmt->n);
+	if(!ecnt) {
+		fprintf(t->fp, "let %s\n", stmt->value.name);
+		return 1;
+	}
+
+	if(ncnt == ecnt) {
+		if(ncnt == 1) {
+			fprintf(t->fp, "let %s = ", stmt->value.name);
+			int val = trans_syntax_expression(t, stmt->n.children);
+			if(!val) return 0;
+
+			fprintf(t->fp, "\n");
+			return 1;
+		} else {
+			fprintf(t->fp, "let %s = ", stmt->value.name);
+			char *p = stmt->value.name;
+			struct syntax_node *c = stmt->n.children;
+			while(c) {
+				while(*p != '\0' && *p != ',') {
+					fputc(*p, t->fp);
+					p++;
+				}
+				p++;
+			
+				fprintf(t->fp, " = ");
+				int val = trans_syntax_expression(t, c);
+				if(!val) return 0;
+				fprintf(t->fp, "\n");
+
+				c = c->next;
+			}
+		}
+	} else if(ecnt == 1) {
+		fprintf(t->fp, "let %s = ", stmt->value.name);
+		int val = trans_syntax_expression(t, stmt->n.children);
+		if(!val) return 0;
+
+		fprintf(t->fp, "\n");
+		return 1;			
+	} else {
+		log_error("assign count mismatch %d:%d %d", stmt->n.lineno, ncnt, ecnt);
+		return 0;			
+	}
+	return 1;	
+}
+
+static int trans_assign(struct translator *t, struct syntax_statement *stmt) {
+	if(stmt->tag != STMT_VAR) {
+		log_error("trans assign with illeagal stmt %d:%s",
+				  stmt->n.lineno,
+				  syntax_statement_tag_string(stmt->tag));
+		return 0;
+	}
+
+	struct syntax_node *c = stmt->n.children;
+	int ncnt = 0;
+	struct syntax_node *nc = c;
+	while(c) {
+		if(c->type == STX_VARIABLE) {
+			ncnt++;
+		} else {
+			break;
+		}
+		c = c->next;
+	}
+	int ecnt = 0;
+	struct syntax_node *ec = c;
+	while(c) {
+		if(c->type == STX_EXPRESSION) {
+			ecnt++;
+		} else {
+			break;
+		}
+		c = c->next;
+	}
+	if(!ecnt) {
+		log_error("assign with no right value %d", stmt->n.lineno);
+		return 0;
+	}
+
+	if(ncnt == ecnt) {
+		while(nc && nc->type == STX_VARIABLE) {
+			int val = trans_syntax_variable(t, nc);
+			if(!val) return 0;
+			fprintf(t->fp, " = ");
+			
+			val = trans_syntax_expression(t, ec);
+			if(!val) return 0;
+			fprintf(t->fp, "\n");
+			
+			nc = nc->next;
+			ec = ec->next;
+		}
+	} else if(ecnt == 1) {
+		fprintf(t->fp, "{");
+		while(nc && nc->type == STX_VARIABLE) {
+			int val = trans_syntax_variable(t, nc);
+			if(!val) return 0;
+			if(nc->next && nc->next->type == STX_VARIABLE) {
+				fprintf(t->fp, ", ");				
+			}
+			nc = nc->next;
+		}
+		fprintf(t->fp, "}");
+		fprintf(t->fp, " = ");
+		int val = trans_syntax_expression(t, ec);
+		if(!val) return 0;
+		fprintf(t->fp, "\n");
+		return 1;
+	} else {
+		log_error("assign count mismatch %d:%d %d", stmt->n.lineno, ncnt, ecnt);
+		return 0;			
+	}
+	return 1;	
 }
 
 static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
@@ -154,7 +309,7 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 	}
 	case STMT_BREAK:
 	{
-		fprintf(t->fp, "break");
+		fprintf(t->fp, "break\n");
 		return 1;
 	}
 	case STMT_RETURN:
@@ -162,33 +317,36 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 		struct syntax_node *p = n->parent->parent;
 		//module return
 		if(p->type == STX_CHUNK) {
-			fprintf(t->fp, "module.exports = ");			
+			fprintf(t->fp, "\n\nmodule.exports = ");
+			t->retstmt = TRUE;
 		} else {
 			fprintf(t->fp, "return ");
 		}
-		return trans_syntax_node_children(t, n);
+		int val = trans_syntax_node_children(t, n);
+		fprintf(t->fp, "\n");
+		return val;
 	}
 	case STMT_DO:
 	{
-		return trans_syntax_node_children(t, n);
+		return trans_syntax_block(t, n->children);
 	}
 	case STMT_WHILE:
 	{
 		fprintf(t->fp, "while (");
-		int val = trans_syntax_expression(t, syntax_node_child(n, 0));
+		int val = trans_syntax_expression(t, n->children);
 		if(!val) return 0;
 		fprintf(t->fp, ")");
-		return trans_syntax_block(t, syntax_node_child(n, 1));
+		return trans_syntax_block(t, n->children->next);
 	}
 	case STMT_REPEAT:
 	{
 		fprintf(t->fp, "do ");
-		int val = trans_syntax_block(t, syntax_node_child(n, 0));
+		int val = trans_syntax_block(t, n->children);
 		if(!val) return 0;
 		fprintf(t->fp, "while (");
-		val = trans_syntax_expression(t, syntax_node_child(n, 1));
+		val = trans_syntax_expression(t, n->children->next);
 		if(!val) return 0;
-		fprintf(t->fp, ")");
+		fprintf(t->fp, ")\n");
 		return 1;
 	}
 	case STMT_FOR_IN:
@@ -203,49 +361,74 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 	}
 	case STMT_IF:
 	{
-		//todo:
+		fprintf(t->fp, "if(");
+		int val = trans_syntax_expression(t, n->children);
+		if(!val) return 0;
+		fprintf(t->fp, ")");
+		val = trans_syntax_block(t, n->children->next);
+		if(!val) return 0;
+		val = trans_syntax_statement(t, n->children->next->next);
+		if(!val) return 0;
+		
 		return 1;
 	}
 	case STMT_ELSE:
 	{
-		//todo:
-		return 1;
+		fprintf(t->fp, "else");
+		return trans_syntax_block(t, n->children);
 	}
 	case STMT_ELSEIF:
 	{
-		//todo:
+		fprintf(t->fp, "else if(");
+		int val = trans_syntax_expression(t, n->children);
+		if(!val) return 0;
+		fprintf(t->fp, ")");
+		val = trans_syntax_block(t, n->children->next);
+		if(!val) return 0;
+		val = trans_syntax_statement(t, n->children->next->next);
+		if(!val) return 0;
+
 		return 1;
 	}
 	case STMT_VAR:
 	{
-		//todo:
-		return 1;
+		struct syntax_node *p = n->parent->parent;
+		if(p->type == STX_CHUNK) {
+			struct syntax_node *c = n->children;
+			while(c && c->type == STX_VARIABLE) {
+				struct syntax_variable *v = (struct syntax_variable *)c;
+				if(v->tag == VAR_NORMAL) {
+					struct symbol *s = symbol_create(v->name, c);
+					symbol_table_insert(t->table, s);
+				}
+				c = c->next;
+			}
+		}
+		return trans_assign(t, stmt);
 	}
 	case STMT_LOCAL_VAR:
 	{
-		fprintf(t->fp, "var %s\n", stmt->value.name);
-		char *p = stmt->value.name;
-		for(int i = 0; i < syntax_node_children_count(n); i++) {
-			while(*p != '\0' && *p != ',') {
-				fputc(*p, t->fp);
-				p++;
-			}
-			fprintf(t->fp, " = ");
-			int val = trans_syntax_expression(t, syntax_node_child(n, i));
-			if(!val) return 0;
-			fprintf(t->fp, "\n");
-			p++;
-		}
-		return 1;
+		return trans_local_assign(t, stmt);
 	}
 	case STMT_FUNC:
+	{
+		struct syntax_node *p = n->parent->parent;
+		if(p->type == STX_CHUNK) {
+			struct syntax_function *func = (struct syntax_function *)n->children;
+			struct symbol *s = symbol_create(func->name, &func->n);
+			symbol_table_insert(t->table, s);
+		}
+		return trans_syntax_function(t, n->children);
+	}
 	case STMT_LOCAL_FUNC:
 	{
-		return trans_syntax_node_children(t, n);
+		return trans_syntax_function(t, n->children);
 	}
 	case STMT_FCALL:
 	{
-		return trans_syntax_node_children(t, n);
+		int val = trans_syntax_functioncall(t, n->children);
+		fprintf(t->fp, "\n");
+		return val;
 	}
 	case STMT_INVALID:
 	default:
@@ -277,8 +460,9 @@ static int trans_syntax_expression(struct translator *t, struct syntax_node *n) 
 
 static int trans_syntax_variable(struct translator *t, struct syntax_node *n) {
 	struct syntax_variable *var = (struct syntax_variable *)n;
-	log_info("trans variable %d:%s, name:%s",
+	log_info("trans variable %d: %d, %s, name:%s",
 			 n->lineno,
+			 var->tag,
 			 syntax_variable_tag_string(var->tag),
 			 var->name ? var->name : "");
 	switch(var->tag) {
@@ -295,18 +479,22 @@ static int trans_syntax_variable(struct translator *t, struct syntax_node *n) {
 	}
 	case VAR_INDEX:
 	{
-		int val = trans_syntax_expression(t, syntax_node_child(n, 0));
+		int val = trans_syntax_expression(t, n->children);
 		if(!val) return 0;
 
 		fprintf(t->fp, "[");
 		
-		val = trans_syntax_expression(t, syntax_node_child(n, 1));
+		val = trans_syntax_expression(t, n->children->next);
 		if(!val) return 0;
 
 		fprintf(t->fp, "]");
+		return 1;
 	}
 	default:
-		log_error("unknown variable %d:%s", n->lineno, syntax_variable_tag_string(var->tag));
+		log_error("unknown variable tag %d: %d, %s",
+				  n->lineno,
+				  var->tag,
+				  syntax_variable_tag_string(var->tag));
 		return 0;
 	}
 }
@@ -347,15 +535,15 @@ static int trans_syntax_function(struct translator *t, struct syntax_node *n) {
 	}
 	fprintf(t->fp, ")");
 
-	return trans_syntax_node_children(t, n);
+	return trans_syntax_block(t, n->children);
 }
 
 static int trans_syntax_functioncall(struct translator *t, struct syntax_node *n) {
 	struct syntax_functioncall *fcall = (struct syntax_functioncall *)n;
-	int val = trans_syntax_expression(t, syntax_node_child(n, 0));
+	int val = trans_syntax_expression(t, n->children);
 	if(!val) return 0;
 
-	struct syntax_argument *arg = (struct syntax_argument *)syntax_node_child(n, 1);
+	struct syntax_argument *arg = (struct syntax_argument *)n->children->next;
 	
 	fprintf(t->fp, "(");
 	//means method call
@@ -380,12 +568,14 @@ static int trans_syntax_argument(struct translator *t, struct syntax_node *n) {
 		return 1;
 	case ARG_NORMAL:
 	{
-		for(int i = 0; i < syntax_node_children_count(n); i++) {
-			int val = trans_syntax_expression(t, syntax_node_child(n, i));
+		struct syntax_node *c = n->children;
+		while(c) {
+			int val = trans_syntax_expression(t, c);
 			if(!val) return 0;
-			if(i < syntax_node_children_count(n) - 1) {
+			if(c->next) {
 				fprintf(t->fp, ",");
 			}
+			c = c->next;
 		}
 	}
 	case ARG_TABLE:
@@ -428,12 +618,15 @@ static int trans_syntax_table(struct translator *t, struct syntax_node *n) {
 		fprintf(t->fp, "[");
 	}
 
-	for(int i = 0; i < syntax_node_children_count(n); i++) {
-		int val = trans_syntax_field(t, syntax_node_child(n, i));
+	struct syntax_node *c = n->children;
+	while(c) {
+		int val = trans_syntax_field(t, c);
 		if(!val) return 0;
-		if(i < syntax_node_children_count(n) - 1) {
+		if(c->next) {
 			fprintf(t->fp, ",");
 		}
+
+		c = c->next;
 	}
 
 	if(tag == FIELD_KEY) {

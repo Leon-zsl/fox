@@ -58,3 +58,15 @@ struct symbol *symbol_table_set(struct symbol_table *t, struct symbol *s) {
 	hmap_insert(t->m, key, s);
 	return ps;
 }
+
+static symbol_handler walkhandler = NULL;
+static void walk_handler(size_t key, void *value) {
+	struct symbol *s = value;
+	if(walkhandler) walkhandler(s->name, s);
+}
+
+void symbol_table_walk(struct symbol_table *t, symbol_handler h) {
+	walkhandler = h;
+	hmap_foreach(t->m, walk_handler);
+	walkhandler = NULL;
+}

@@ -206,7 +206,7 @@ basestmt:		';'
 					stmt->tag = STMT_DO;
 					syntax_node_push_child_tail(&stmt->n, &($2->n));
 					$$ = stmt;
-				}				
+				}
 		;
 
 loopstmt:		WHILE exp DO block END
@@ -344,13 +344,6 @@ funcstmt:		funcall
 					stmt->tag = STMT_FUNC;
 					syntax_node_push_child_tail(&stmt->n, &($1->n));
 					$$ = stmt;
-
-					const char *name = $1->name;
-					//only export top level names
-					if(!strstr(name, ".") && !strstr(name, ":")) {
-						struct symbol *s = symbol_create(name, &stmt->n);
-						symbol_table_insert(parse_table, s);
-					}
 				}
 		|		LOCAL funcdef
 				{
@@ -735,9 +728,6 @@ var:			NAME
 					var->tag = VAR_NORMAL;
 					var->name = $1;
 					$$ = var;
-					
-					struct symbol* s = symbol_create($1, &var->n);
-					symbol_table_insert(parse_table, s);					
 				}
 		|		prefixexp '[' exp ']'
 				{
