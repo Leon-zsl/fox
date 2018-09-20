@@ -368,45 +368,6 @@ label:			LABEL NAME LABEL
 				}
 		;
 
-varlist:		var
-		|		varlist ',' var
-				{
-					syntax_node_push_sibling_tail(&($1->n), &($3->n));
-					$$ = $1;
-				}
-		;
-
-var:			NAME
-				{
-					struct syntax_variable *var = create_syntax_variable();
-					var->n.lineno = yylineno;
-					var->tag = VAR_NORMAL;
-					var->name = $1;
-					$$ = var;
-					
-					struct symbol* s = symbol_create($1, &var->n);
-					symbol_table_insert(parse_table, s);					
-				}
-		|		prefixexp '[' exp ']'
-				{
-					struct syntax_variable *var = create_syntax_variable();
-					var->n.lineno = yylineno;
-					var->tag = VAR_INDEX;
-					syntax_node_push_child_tail(&var->n, &($1->n));
-					syntax_node_push_child_tail(&var->n, &($3->n));
-					$$ = var;
-				}
-		|		prefixexp '.' NAME
-				{
-					struct syntax_variable *var = create_syntax_variable();
-					var->n.lineno = yylineno;
-					var->tag = VAR_KEY;
-					syntax_node_push_child_tail(&var->n, &($1->n));
-					var->name = $3;
-					$$ = var;	
-				}
-		;
-
 namelist:		NAME
 		|		namelist ',' NAME
 				{
@@ -756,6 +717,45 @@ tableexp:		table
 					exp->tag = EXP_TABLE;
 					syntax_node_push_child_tail(&exp->n, &($1->n));
 					$$ = exp;
+				}
+		;
+
+varlist:		var
+		|		varlist ',' var
+				{
+					syntax_node_push_sibling_tail(&($1->n), &($3->n));
+					$$ = $1;
+				}
+		;
+
+var:			NAME
+				{
+					struct syntax_variable *var = create_syntax_variable();
+					var->n.lineno = yylineno;
+					var->tag = VAR_NORMAL;
+					var->name = $1;
+					$$ = var;
+					
+					struct symbol* s = symbol_create($1, &var->n);
+					symbol_table_insert(parse_table, s);					
+				}
+		|		prefixexp '[' exp ']'
+				{
+					struct syntax_variable *var = create_syntax_variable();
+					var->n.lineno = yylineno;
+					var->tag = VAR_INDEX;
+					syntax_node_push_child_tail(&var->n, &($1->n));
+					syntax_node_push_child_tail(&var->n, &($3->n));
+					$$ = var;
+				}
+		|		prefixexp '.' NAME
+				{
+					struct syntax_variable *var = create_syntax_variable();
+					var->n.lineno = yylineno;
+					var->tag = VAR_KEY;
+					syntax_node_push_child_tail(&var->n, &($1->n));
+					var->name = $3;
+					$$ = var;	
 				}
 		;
 

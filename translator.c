@@ -133,15 +133,15 @@ static int trans_syntax_chunk(struct translator *t, struct syntax_node *n) {
 }
 
 static int trans_syntax_block(struct translator *t, struct syntax_node *n) {
-	fprintf(t->fp, "{\n");
+	if(n->parent->type != STX_CHUNK) fprintf(t->fp, "\n{\n");
 	int val = trans_syntax_node_children(t, n);
-	fprintf(t->fp, "}\n");
+	if(n->parent->type != STX_CHUNK) fprintf(t->fp, "\n}\n");
 	return val;
 }
 
 static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 	struct syntax_statement *stmt = (struct syntax_statement *)n;
-	log_info("trans statement, tag:%s", syntax_statement_tag_string(stmt->tag));
+	log_info("trans statement %d:%s", n->lineno, syntax_statement_tag_string(stmt->tag));
 	
 	switch(stmt->tag) {
 	case STMT_EMPTY:
@@ -149,7 +149,7 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 	case STMT_LABEL:
 	case STMT_GOTO:
 	{
-		log_error("unsupport stmt:%s", syntax_statement_tag_string(stmt->tag));
+		log_error("unsupport stmt %d:%s", n->lineno, syntax_statement_tag_string(stmt->tag));
 		return 0;
 	}
 	case STMT_BREAK:
@@ -249,7 +249,7 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 	}
 	case STMT_INVALID:
 	default:
-		log_error("illeagal stmt:%d", stmt->tag);
+		log_error("illeagal stmt %d:%d", n->lineno, stmt->tag);
 		return 0;
 	}
 
@@ -259,15 +259,17 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 static int trans_syntax_expression(struct translator *t, struct syntax_node *n) {
 	struct syntax_expression * exp = (struct syntax_expression *)n;
 	if(exp->tag == EXP_NUMBER) {
-		log_info("trans expression, tag:%s, number:%f",
+		log_info("trans expression %d:%s, number:%f",
+				 n->lineno,
 				 syntax_expression_tag_string(exp->tag),
 				 exp->value.number);
 	} else if(exp->tag == EXP_STRING) {
-		log_info("trans expression, tag:%s, string:%s",
+		log_info("trans expression %d:%s, string:%s",
+				 n->lineno,
 				 syntax_expression_tag_string(exp->tag),
 				 exp->value.string);
 	} else {
-		log_info("trans expression, tag:%s", syntax_expression_tag_string(exp->tag));
+		log_info("trans expression %d:%s", n->lineno, syntax_expression_tag_string(exp->tag));
 	}
 
 	return trans_syntax_node_children(t, n);
@@ -275,15 +277,43 @@ static int trans_syntax_expression(struct translator *t, struct syntax_node *n) 
 
 static int trans_syntax_variable(struct translator *t, struct syntax_node *n) {
 	struct syntax_variable *var = (struct syntax_variable *)n;
-	log_info("trans variable, tag:%s, name:%s",
+	log_info("trans variable %d:%s, name:%s",
+			 n->lineno,
 			 syntax_variable_tag_string(var->tag),
 			 var->name ? var->name : "");
-	return trans_syntax_node_children(t, n);
+	switch(var->tag) {
+	case VAR_NORMAL:
+		fprintf(t->fp, var->name);
+		return 1;
+	case VAR_KEY:
+	{
+		int val = trans_syntax_node_children(t, n);
+		if(!val) return 0;
+		fprintf(t->fp, ".");
+		fprintf(t->fp, var->name);
+		return 1;
+	}
+	case VAR_INDEX:
+	{
+		int val = trans_syntax_expression(t, syntax_node_child(n, 0));
+		if(!val) return 0;
+
+		fprintf(t->fp, "[");
+		
+		val = trans_syntax_expression(t, syntax_node_child(n, 1));
+		if(!val) return 0;
+
+		fprintf(t->fp, "]");
+	}
+	default:
+		log_error("unknown variable %d:%s", n->lineno, syntax_variable_tag_string(var->tag));
+		return 0;
+	}
 }
 
 static int trans_syntax_function(struct translator *t, struct syntax_node *n) {
 	struct syntax_function *func = (struct syntax_function *)n;
-	log_info("trans function, name:%s", func->name ? func->name : "");
+	log_info("trans function %d, name:%s", n->lineno, func->name ? func->name : "");
 	
 	fprintf(t->fp, "function ");
 	char *p = func->name;
@@ -306,7 +336,8 @@ static int trans_syntax_function(struct translator *t, struct syntax_node *n) {
 	} else {
 		if(func->pars) {
 			if(strstr(func->pars, "...")) {
-				log_error("unsupported variable parameters:%s, %s",
+				log_error("unsupported variable parameters %d, func:%s, pars:%s",
+						  n->lineno,
 						  func->name ? func->name : "",
 						  func->pars);
 				return 0;
@@ -363,7 +394,7 @@ static int trans_syntax_argument(struct translator *t, struct syntax_node *n) {
 		fprintf(t->fp, arg->name);
 		return 1;
 	default:
-		log_error("unknown argument tag:%s", syntax_field_tag_string(arg->tag));
+		log_error("unknown argument %d:%s", n->lineno, syntax_field_tag_string(arg->tag));
 		return 0;		
 	}
 }
@@ -381,13 +412,13 @@ static int trans_syntax_table(struct translator *t, struct syntax_node *n) {
 			tag = f->tag;
 		}
 		if(tag != f->tag) {
-			log_error("unsupport composite table:%d", n->lineno);
+			log_error("unsupport composite table %d", n->lineno);
 			return 0;
 		}
 	}
 
 	if(tag != FIELD_KEY && tag != FIELD_SINGLE) {
-		log_error("unsupport composite table:%d", n->lineno);
+		log_error("unsupport composite table %d", n->lineno);
 		return 0;
 	}
 
@@ -415,13 +446,14 @@ static int trans_syntax_table(struct translator *t, struct syntax_node *n) {
 
 static int trans_syntax_field(struct translator *t, struct syntax_node *n) {
 	struct syntax_field *field = (struct syntax_field *)n;
-	log_info("trans field, tag:%s, name:%s",
+	log_info("trans field, %d:%s, name:%s",
+			 n->lineno,
 			 syntax_field_tag_string(field->tag),
 			 field->name ? field->name : "");
 	switch(field->tag) {
 	case FIELD_INDEX:
 	{
-		log_error("unsupport field type:%d,%s", n->lineno, syntax_field_tag_string(field->tag));
+		log_error("unsupport field %d:%s", n->lineno, syntax_field_tag_string(field->tag));
 	}
 	case FIELD_KEY:
 	{
@@ -432,15 +464,15 @@ static int trans_syntax_field(struct translator *t, struct syntax_node *n) {
 	case FIELD_SINGLE:
 		return trans_syntax_node_children(t, n);
 	default:
-		log_error("unknown field tag:%s", syntax_field_tag_string(field->tag));
+		log_error("unknown field %d:%s", n->lineno, syntax_field_tag_string(field->tag));
 		return 0;
 	}
 }
 
 static int translate_syntax_node(struct translator *t, struct syntax_node *n) {
-	log_info("trans node, type:%s, line:%d, depth:%d, children:%d",
-			 syntax_node_type_string(n->type),
+	log_info("trans node line:%d, type:%s, depth:%d, children:%d",
 			 n->lineno,
+			 syntax_node_type_string(n->type),
 			 syntax_node_depth(n),
 			 syntax_node_children_count(n));
 
@@ -477,7 +509,7 @@ static int translate_syntax_node(struct translator *t, struct syntax_node *n) {
 		val = trans_syntax_field(t, n);
 		break;
 	default:
-		log_error("unknown syntax node type to translate:%d", n->type);
+		log_error("unknown syntax node type to translate %d:%d", n->lineno, n->type);
 		break;
 	}
 	return val;
