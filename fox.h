@@ -17,25 +17,35 @@ extern int log_level;
 #define LOG_MSG  3
 
 #define log_error(fmt, ...) 			        \
-if(log_level >= LOG_ERR) {						\
-	char errmsg[1024];							\
-	sprintf(errmsg, fmt, ##__VA_ARGS__);		\
-	fprintf(stdout, "[ERROR]FILE:%s LINE:%d %s\n", __FILE__, __LINE__, errmsg); \
-}
+	if(log_level >= LOG_ERR) {					\
+		char errmsg[1024];						\
+		sprintf(errmsg, fmt, ##__VA_ARGS__);	\
+		fprintf(stdout, "[ERROR]FILE:%s LINE:%d %s\n", __FILE__, __LINE__, errmsg);	\
+	}
 
 #define log_warn(fmt, ...)             			\
-if(log_level >= LOG_WARN) {						\
-	char errmsg[1024];							\
-	sprintf(errmsg, fmt, ##__VA_ARGS__);		\
-	fprintf(stdout, "[WARN]FILE:%s LINE:%d %s\n", __FILE__, __LINE__, errmsg); \
-}
+	if(log_level >= LOG_WARN) {					\
+		char errmsg[1024];						\
+		sprintf(errmsg, fmt, ##__VA_ARGS__);	\
+		fprintf(stdout, "[WARN]FILE:%s LINE:%d %s\n", __FILE__, __LINE__, errmsg); \
+	}
 
 #define log_info(fmt, ...)                      \
-if(log_level >= LOG_MSG) {						\
-	char errmsg[1024];							\
-	sprintf(errmsg, fmt, ##__VA_ARGS__);		\
-	fprintf(stdout, "[INFO]FILE:%s LINE:%d %s\n", __FILE__, __LINE__, errmsg); \
-}
+	if(log_level >= LOG_MSG) {					\
+		char errmsg[1024];						\
+		sprintf(errmsg, fmt, ##__VA_ARGS__);	\
+		fprintf(stdout, "[INFO]FILE:%s LINE:%d %s\n", __FILE__, __LINE__, errmsg); \
+	}
+
+#define log_assert(condition, fmt, ...)			\
+	if(!(condition)) {							\
+		if(log_level >= LOG_ERR) {				\
+			char errmsg[1024];					\
+			sprintf(errmsg, fmt, ##__VA_ARGS__);\
+			fprintf(stdout, "[ERROR]FILE:%s LINE:%d %s\n", __FILE__, __LINE__, errmsg);	\
+		}										\
+	}											\
+	assert(condition)
 
 #ifndef NULL
 #define NULL ((void *)0)

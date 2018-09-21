@@ -499,9 +499,11 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 		fprintf(t->fp, "\n");
 		return val;
 	}
-	case STMT_INVALID:
 	default:
-		log_error("illeagal stmt %d:%d", n->lineno, stmt->tag);
+		log_assert(FALSE, "unknown statement %d:%d %s",
+				   n->lineno,
+				   stmt->tag,
+				   syntax_statement_tag_string(stmt->tag));
 		return 0;
 	}
 
@@ -683,8 +685,9 @@ static int trans_syntax_expression(struct translator *t, struct syntax_node *n) 
 		return 0;
 
 	default:
-		log_error("unknown expression %d:%s",
-				  n->lineno,
+		log_assert(FALSE, "unknown expression %d:%d %s",
+				   n->lineno,
+				   exp->tag,
 				  syntax_expression_tag_string(exp->tag));
 		return 0;
 	}
@@ -723,7 +726,7 @@ static int trans_syntax_variable(struct translator *t, struct syntax_node *n) {
 		return 1;
 	}
 	default:
-		log_error("unknown variable tag %d: %d, %s",
+		log_assert(FALSE, "unknown variable tag %d: %d, %s",
 				  n->lineno,
 				  var->tag,
 				  syntax_variable_tag_string(var->tag));
@@ -819,9 +822,10 @@ static int trans_syntax_argument(struct translator *t, struct syntax_node *n) {
 		fprintf(t->fp, arg->name);
 		return 1;
 	default:
-		log_error("unknown argument %d:%s",
-				  n->lineno,
-				  syntax_field_tag_string(arg->tag));
+		log_assert(FALSE, "unknown argument %d:%d %s",
+				   n->lineno,
+				   arg->tag,
+				   syntax_field_tag_string(arg->tag));
 		return 0;		
 	}
 }
@@ -897,9 +901,10 @@ static int trans_syntax_field(struct translator *t, struct syntax_node *n) {
 	case FIELD_SINGLE:
 		return trans_syntax_expression(t, n->children);
 	default:
-		log_error("unknown field %d:%s",
-				  n->lineno,
-				  syntax_field_tag_string(field->tag));
+		log_assert(FALSE, "unknown field %d:%d %s",
+				   n->lineno,
+				   field->tag,
+				   syntax_field_tag_string(field->tag));
 		return 0;
 	}
 }
@@ -944,7 +949,8 @@ static int translate_syntax_node(struct translator *t, struct syntax_node *n) {
 		val = trans_syntax_field(t, n);
 		break;
 	default:
-		log_error("unknown syntax node type to translate %d:%d", n->lineno, n->type);
+		log_assert(FALSE,"unknown syntax node %d:%d %s",
+				   n->lineno, n->type, syntax_node_type_string(n->type));
 		break;
 	}
 	return val;
