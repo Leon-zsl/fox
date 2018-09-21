@@ -291,6 +291,7 @@ elsestmt:		/* empty */
 				}
 		|		ELSEIF exp THEN block elsestmt
 				{
+					log_info("yacc elseif found:%d", yylineno);
 					struct syntax_statement *stmt = create_syntax_statement();
 					stmt->n.lineno = yylineno;
 					stmt->tag = STMT_ELSEIF;

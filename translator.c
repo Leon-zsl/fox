@@ -46,11 +46,17 @@ int parse(const char *filename,
 	return 1;
 }
 
+enum rettype {
+	RET_NO,
+	RET_EXP,
+	RET_SYMBOL,
+};
+
 struct translator {
 	struct syntax_tree *tree;
 	struct symbol_table *table;
 	FILE *fp;
-	bool retstmt;
+	int retstmt;
 };
 
 static struct translator *translator_create(struct syntax_tree *tree,
@@ -66,7 +72,7 @@ static struct translator *translator_create(struct syntax_tree *tree,
 	t->tree = tree;
 	t->table = table;
 	t->fp = fp;
-	t->retstmt = FALSE;
+	t->retstmt = RET_NO;
 	return t;
 }
 
@@ -158,7 +164,7 @@ static int trans_syntax_chunk(struct translator *t, struct syntax_node *n) {
 	int val = trans_syntax_node_children(t, n);
 	if(!val) return 0;
 
-	if(!t->retstmt) {
+	if(t->retstmt == RET_SYMBOL) {
 		fprintf(t->fp, "\n\nmodule.exports = {\n");
 		translator = t;
 		symbol_table_walk(t->table, exports_handler);
@@ -348,7 +354,7 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 		
 		if(p->type == STX_CHUNK) {
 			fprintf(t->fp, "\n\nmodule.exports = ");
-			t->retstmt = TRUE;
+			t->retstmt |= RET_EXP;
 		} else {
 			fprintf(t->fp, "return ");
 		}
@@ -430,9 +436,11 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 	}
 	case STMT_IF:
 	{
+		log_info("stmt_if");
 		fprintf(t->fp, "if(");
 		int val = trans_syntax_expression(t, n->children);
 		if(!val) return 0;
+		log_info("stmt_if 111");
 		fprintf(t->fp, ")");
 		val = trans_syntax_block(t, n->children->next);
 		if(!val) return 0;
@@ -469,6 +477,7 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 				if(v->tag == VAR_NORMAL) {
 					struct symbol *s = symbol_create(v->name, c);
 					symbol_table_insert(t->table, s);
+					t->retstmt |= RET_SYMBOL;
 				}
 				c = c->next;
 			}
@@ -486,6 +495,7 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 			struct syntax_function *func = (struct syntax_function *)n->children;
 			struct symbol *s = symbol_create(func->name, &func->n);
 			symbol_table_insert(t->table, s);
+			t->retstmt |= RET_SYMBOL;
 		}
 		return trans_syntax_function(t, n->children);
 	}
@@ -610,36 +620,6 @@ static int trans_syntax_expression(struct translator *t, struct syntax_node *n) 
 
 		return 1;		
 	}
-	case EXP_NOT:
-	{	
-		int val = trans_syntax_expression(t, n->children);
-		if(!val) return 0;
-		fprintf(t->fp, " !");
-		val = trans_syntax_expression(t, n->children->next);
-		if(!val) return 0;
-
-		return 1;	
-	}
-	case EXP_NEG:
-	{
-		int val = trans_syntax_expression(t, n->children);
-		if(!val) return 0;
-		fprintf(t->fp, " -");
-		val = trans_syntax_expression(t, n->children->next);
-		if(!val) return 0;
-
-		return 1;
-	}
-	case EXP_BNOT:
-	{
-		int val = trans_syntax_expression(t, n->children);
-		if(!val) return 0;
-		fprintf(t->fp, " ~");
-		val = trans_syntax_expression(t, n->children->next);
-		if(!val) return 0;
-
-		return 1;
-	}
 	case EXP_CONC:
 	{
 		int val = trans_syntax_expression(t, n->children);
@@ -649,6 +629,31 @@ static int trans_syntax_expression(struct translator *t, struct syntax_node *n) 
 		if(!val) return 0;
 
 		return 1;		
+	}
+	
+	case EXP_NOT:
+	{	
+		fprintf(t->fp, " !");
+		int val = trans_syntax_expression(t, n->children);
+		if(!val) return 0;
+
+		return 1;	
+	}
+	case EXP_NEG:
+	{
+		fprintf(t->fp, " -");
+		int val = trans_syntax_expression(t, n->children);
+		if(!val) return 0;
+
+		return 1;
+	}
+	case EXP_BNOT:
+	{
+		fprintf(t->fp, " ~");
+		int val = trans_syntax_expression(t, n->children);
+		if(!val) return 0;
+
+		return 1;
 	}
 	case EXP_LEN:
 	{
