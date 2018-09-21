@@ -74,10 +74,10 @@ typedef unsigned long long uint64;
 static inline char *fox_strdup(const char *s) {
 	if(s == NULL) return NULL;
 	size_t l = strlen(s);
-	char *ds = malloc(l+1);
-	if(l == 0) ds[0] = '\0';
-	else strncpy(ds, s, l);
-	return ds;
+	char *d = malloc(l+1);
+	memset(d, 0, l+1);
+	if(l > 0) strncpy(d, s, l);
+	return d;
 }
 
 static inline int fox_strempty(const char *s) {
@@ -95,41 +95,20 @@ static inline char *fox_strcat(const char *s0, const char * s1) {
 	int l0 = strlen(s0);
 	int l1 = strlen(s1);
 	char *d = malloc(l0 + l1 + 1);
-	if(l0 + l1 == 0) {
-		d[0] = '\0';
-	} else {
-		strncpy(d, s0, l0);
+	memset(d, 0, l0+l1+1);
+	if(l0 > 0) {
+		strncpy(d, s0, l0);			
+	}
+	if(l1 > 0) {
 		strncpy(d + l0, s1, l1);
 	}
 	return d;
 }
 
-/* static inline char *fox_strrep(const char *s, const char *r0, const char *r1) { */
-/* 	if(!s) return NULL; */
-
-/* 	if(!r0 || !r1 || !strstr(s, r0) || strlen(s) == 0) { */
-/* 		char *d = malloc(strlen(s)+1); */
-/* 		if(strlen(s) == 0) d[0] = '\0'; */
-/* 		else strncpy(d, s, strlen(s)); */
-/* 		return d; */
-/* 	} */
-
-/* 	int lens = strlen(s); */
-/* 	int len0 = strlen(r0); */
-/* 	int len1 = strlen(r1); */
-/* 	int len = lens + len1 - len0; */
-/* 	char *d = malloc(len); */
-	
-/* 	char *substr = strstr(s, r0); */
-/* 	strncpy(d, s, substr - s); */
-/* 	strncpy(d + (substr - s), substr, len1); */
-/* 	strncpy(d + (substr - s + len1), substr + len0, lens - len0 - (substr -s)); */
-/* 	return d; */
-/* } */
-
 static inline char *fox_strrep(const char *s, char r0, char r1) {
 	if(!s) return NULL;
 	char *d = malloc(strlen(s)+1);
+	memset(d, 0, strlen(s)+1);
 	strcpy(d, s);
 	char *p = d;
 	while(*p != '\0') {
