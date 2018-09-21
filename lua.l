@@ -63,7 +63,7 @@ extern char *yytext;
 [0-9]+("."[0-9]*)? | 
 ([0-9]+)?"."[0-9]+ |
 [0-9]+("."[0-9]*)?[eE][+-]?[0-9]+ |
-([0-9]+)?"."[0-9]+[eE][+-]?[0-9]+ { yylval.number = atof(yytext); return NUMBER; }
+([0-9]+)?"."[0-9]+[eE][+-]?[0-9]+ { yylval.string = fox_strdup(yytext); return NUMBER; }
 
 .						{ return *yytext; }
 

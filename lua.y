@@ -54,7 +54,7 @@ struct symbol_table *parse_table = NULL;
 %token					AND OR GE LE EQ NE CONC DOTS LSHIFT RSHIFT FDIV
 
 %token<string>			NAME STRING
-%token<number>			NUMBER
+%token<string>			NUMBER
 
 %type<chunk>			chunk
 %type<block>			block
@@ -450,7 +450,7 @@ constexp:		NIL
 					struct syntax_expression *exp = create_syntax_expression();
 					exp->n.lineno = yylineno;
 					exp->tag = EXP_NUMBER;
-					exp->value.number = $1;
+					exp->value.string = $1;
 					$$ = exp;					
 				}
 		|		STRING
@@ -941,7 +941,7 @@ void yyprint(FILE *file, int type, YYSTYPE value)
 {
 	switch(type) {
 	case NUMBER:
-		fprintf(file, "\n[YACC]%s, %f\n", "number", value.number);
+		fprintf(file, "\n[YACC]%s, %s\n", "number", value.string);
 		break;
 	case STRING:
 		fprintf(file, "\n[YACC]%s, %s\n", "string", value.string);

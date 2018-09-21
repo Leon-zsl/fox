@@ -109,9 +109,9 @@ enum syntax_expression_tag {
 	EXP_SUB,
 	EXP_MUL,
 	EXP_DIV,
+	EXP_MOD,
 	EXP_FDIV,
 	EXP_EXP,
-	EXP_MOD,
 
 	EXP_BAND,
 	EXP_BOR,

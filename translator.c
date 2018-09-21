@@ -118,7 +118,7 @@ static int trans_syntax_table(struct translator *t, struct syntax_node *n);
 static int trans_syntax_field(struct translator *t, struct syntax_node *n);
 
 static int func_is_method(const char *funcname) {
-	return strstr(funcname, ":") != NULL;
+	return funcname && strstr(funcname, ":");
 }
 
 static struct translator *translator = NULL;
@@ -157,9 +157,9 @@ static int trans_syntax_chunk(struct translator *t, struct syntax_node *n) {
 }
 
 static int trans_syntax_block(struct translator *t, struct syntax_node *n) {
-	if(n->parent->type != STX_CHUNK) fprintf(t->fp, "\n{\n");
+	if(n->parent->type != STX_CHUNK) fprintf(t->fp, " {\n");
 	int val = trans_syntax_node_children(t, n);
-	if(n->parent->type != STX_CHUNK) fprintf(t->fp, "\n}\n");
+	if(n->parent->type != STX_CHUNK) fprintf(t->fp, "}\n");
 	return val;
 }
 
@@ -441,21 +441,184 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 
 static int trans_syntax_expression(struct translator *t, struct syntax_node *n) {
 	struct syntax_expression * exp = (struct syntax_expression *)n;
-	if(exp->tag == EXP_NUMBER) {
-		log_info("trans expression %d:%s, number:%f",
-				 n->lineno,
-				 syntax_expression_tag_string(exp->tag),
-				 exp->value.number);
-	} else if(exp->tag == EXP_STRING) {
-		log_info("trans expression %d:%s, string:%s",
-				 n->lineno,
-				 syntax_expression_tag_string(exp->tag),
-				 exp->value.string);
-	} else {
-		log_info("trans expression %d:%s", n->lineno, syntax_expression_tag_string(exp->tag));
+	log_info("trans expression %d:%s",
+			 n->lineno,
+			 syntax_expression_tag_string(exp->tag));
+
+	switch(exp->tag) {
+	case EXP_NIL:
+	case EXP_TRUE:
+	case EXP_FALSE:
+		fprintf(t->fp, " %s ", syntax_expression_tag_string(exp->tag));
+		return 1;
+		
+	case EXP_NUMBER:
+	case EXP_STRING:
+		fprintf(t->fp, exp->value.string);
+		return 1;
+		
+	case EXP_PARENTHESIS:
+	{
+		fprintf(t->fp, "( ");
+		int val = trans_syntax_expression(t, n->children);
+		if(!val) return 0;
+		fprintf(t->fp, " )");
+		return 1;
 	}
 
-	return trans_syntax_node_children(t, n);
+	case EXP_ADD:
+	case EXP_SUB:
+	case EXP_MUL:
+	case EXP_DIV:
+	case EXP_MOD:
+	case EXP_BAND:
+	case EXP_BOR:
+	case EXP_LSHIFT:
+	case EXP_RSHIFT:
+	case EXP_LESS:
+	case EXP_GREATER:
+	case EXP_LE:
+	case EXP_GE:
+	{
+		int val = trans_syntax_expression(t, n->children);
+		if(!val) return 0;
+		fprintf(t->fp, " %s ", syntax_expression_tag_string(exp->tag));
+		val = trans_syntax_expression(t, n->children->next);
+		if(!val) return 0;
+
+		return 1;
+	}
+
+	case EXP_XOR:
+	{
+		int val = trans_syntax_expression(t, n->children);
+		if(!val) return 0;
+		fprintf(t->fp, " ^ ");
+		val = trans_syntax_expression(t, n->children->next);
+		if(!val) return 0;
+
+		return 1;		
+	}
+	case EXP_EQ:
+	{
+		int val = trans_syntax_expression(t, n->children);
+		if(!val) return 0;
+		fprintf(t->fp, " === ");
+		val = trans_syntax_expression(t, n->children->next);
+		if(!val) return 0;
+
+		return 1;
+	}
+	case EXP_NE:
+	{
+		int val = trans_syntax_expression(t, n->children);
+		if(!val) return 0;
+		fprintf(t->fp, " !== ");
+		val = trans_syntax_expression(t, n->children->next);
+		if(!val) return 0;
+
+		return 1;
+	}
+	case EXP_AND:
+	{
+		int val = trans_syntax_expression(t, n->children);
+		if(!val) return 0;
+		fprintf(t->fp, " && ");
+		val = trans_syntax_expression(t, n->children->next);
+		if(!val) return 0;
+
+		return 1;		
+	}
+	case EXP_OR:
+	{
+		int val = trans_syntax_expression(t, n->children);
+		if(!val) return 0;
+		fprintf(t->fp, " || ");
+		val = trans_syntax_expression(t, n->children->next);
+		if(!val) return 0;
+
+		return 1;		
+	}
+	case EXP_NOT:
+	{	
+		int val = trans_syntax_expression(t, n->children);
+		if(!val) return 0;
+		fprintf(t->fp, " !");
+		val = trans_syntax_expression(t, n->children->next);
+		if(!val) return 0;
+
+		return 1;	
+	}
+	case EXP_NEG:
+	{
+		int val = trans_syntax_expression(t, n->children);
+		if(!val) return 0;
+		fprintf(t->fp, " -");
+		val = trans_syntax_expression(t, n->children->next);
+		if(!val) return 0;
+
+		return 1;
+	}
+	case EXP_BNOT:
+	{
+		int val = trans_syntax_expression(t, n->children);
+		if(!val) return 0;
+		fprintf(t->fp, " ~");
+		val = trans_syntax_expression(t, n->children->next);
+		if(!val) return 0;
+
+		return 1;
+	}
+	case EXP_CONC:
+	{
+		int val = trans_syntax_expression(t, n->children);
+		if(!val) return 0;
+		fprintf(t->fp, " + ");
+		val = trans_syntax_expression(t, n->children->next);
+		if(!val) return 0;
+
+		return 1;		
+	}
+	case EXP_LEN:
+	{
+		fprintf(t->fp, "(");
+		int val = trans_syntax_expression(t, n->children);
+		if(!val) return 0;
+		fprintf(t->fp, ").length ");
+		return 1;
+	}
+
+	case EXP_TABLE:
+	{
+		return trans_syntax_table(t, n->children);
+	}
+	case EXP_VAR:
+	{
+		return trans_syntax_variable(t, n->children);
+	}
+	case EXP_FUNC:
+	{
+		return trans_syntax_function(t, n->children);
+	}
+	case EXP_FCALL:
+	{
+		return trans_syntax_functioncall(t, n->children);
+	}
+
+	case EXP_DOTS:
+	case EXP_EXP:
+	case EXP_FDIV:
+		log_error("unsupport expression %d:%s",
+				  n->lineno,
+				  syntax_expression_tag_string(exp->tag));
+		return 0;
+
+	default:
+		log_error("unknown expression %d:%s",
+				  n->lineno,
+				  syntax_expression_tag_string(exp->tag));
+		return 0;
+	}
 }
 
 static int trans_syntax_variable(struct translator *t, struct syntax_node *n) {
@@ -504,14 +667,16 @@ static int trans_syntax_function(struct translator *t, struct syntax_node *n) {
 	log_info("trans function %d, name:%s", n->lineno, func->name ? func->name : "");
 	
 	fprintf(t->fp, "function ");
-	char *p = func->name;
-	while(p && *p != '\0') {
-		if(*p == ':') {
-			fputc('.', t->fp);
-		} else {
-			fputc(*p, t->fp);
+	if(func->name) {
+		char *p = func->name;
+		while(p && *p != '\0') {
+			if(*p == ':') {
+				fputc('.', t->fp);
+			} else {
+				fputc(*p, t->fp);
+			}
+			p++;
 		}
-		p++;
 	}
 	
 	fprintf(t->fp, "(");
