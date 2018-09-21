@@ -60,10 +60,11 @@ extern char *yytext;
 \"[^\"]*\" 				{ yylval.string = fox_strdup(yytext); return STRING; }
 \'[^\']*\' 				{ yylval.string = fox_strdup(yytext); return STRING; }
 
-[0-9]+("."[0-9]*)? | 
-([0-9]+)?"."[0-9]+ |
+[0-9]+("."[0-9]*)?				  | 
+([0-9]+)?"."[0-9]+				  |
 [0-9]+("."[0-9]*)?[eE][+-]?[0-9]+ |
-([0-9]+)?"."[0-9]+[eE][+-]?[0-9]+ { yylval.string = fox_strdup(yytext); return NUMBER; }
+([0-9]+)?"."[0-9]+[eE][+-]?[0-9]+ |
+0x[0-9a-fA-F]+					  { yylval.string = fox_strdup(yytext); return NUMBER; }
 
 .						{ return *yytext; }
 
