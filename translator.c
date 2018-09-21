@@ -742,14 +742,17 @@ static int trans_syntax_argument(struct translator *t, struct syntax_node *n) {
 			}
 			c = c->next;
 		}
+		return 1;
 	}
 	case ARG_TABLE:
-		return trans_syntax_node_children(t, n);
+		return trans_syntax_table(t, n->children);
 	case ARG_STRING:
 		fprintf(t->fp, arg->name);
 		return 1;
 	default:
-		log_error("unknown argument %d:%s", n->lineno, syntax_field_tag_string(arg->tag));
+		log_error("unknown argument %d:%s",
+				  n->lineno,
+				  syntax_field_tag_string(arg->tag));
 		return 0;		
 	}
 }
@@ -811,18 +814,23 @@ static int trans_syntax_field(struct translator *t, struct syntax_node *n) {
 	switch(field->tag) {
 	case FIELD_INDEX:
 	{
-		log_error("unsupport field %d:%s", n->lineno, syntax_field_tag_string(field->tag));
+		log_error("unsupport field %d:%s",
+				  n->lineno,
+				  syntax_field_tag_string(field->tag));
+		return 0;
 	}
 	case FIELD_KEY:
 	{
 		fprintf(t->fp, field->name);
 		fprintf(t->fp, ": ");
-		return trans_syntax_node_children(t, n);
+		return trans_syntax_expression(t, n->children);
 	}
 	case FIELD_SINGLE:
-		return trans_syntax_node_children(t, n);
+		return trans_syntax_expression(t, n->children);
 	default:
-		log_error("unknown field %d:%s", n->lineno, syntax_field_tag_string(field->tag));
+		log_error("unknown field %d:%s",
+				  n->lineno,
+				  syntax_field_tag_string(field->tag));
 		return 0;
 	}
 }
