@@ -159,7 +159,7 @@ static int trans_syntax_chunk(struct translator *t, struct syntax_node *n) {
 static int trans_syntax_block(struct translator *t, struct syntax_node *n) {
 	if(n->parent->type != STX_CHUNK) fprintf(t->fp, " {\n");
 	int val = trans_syntax_node_children(t, n);
-	if(n->parent->type != STX_CHUNK) fprintf(t->fp, "}\n");
+	if(n->parent->type != STX_CHUNK) fprintf(t->fp, "\n}\n");
 	return val;
 }
 
@@ -309,13 +309,28 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 	}
 	case STMT_BREAK:
 	{
-		fprintf(t->fp, "break\n");
+		fprintf(t->fp, "break");
 		return 1;
 	}
 	case STMT_RETURN:
 	{
 		struct syntax_node *p = n->parent->parent;
-		//module return
+		if(syntax_node_children_count(n) > 1) {
+			log_error("unsupport multiple return %d:%s",
+					  n->lineno,
+					  syntax_statement_tag_string(stmt->tag));
+			return 0;
+		}
+		
+		if(!n->children) {
+			if(p->type == STX_CHUNK) {
+				return 1;
+			} else {
+				fprintf(t->fp, "return ");
+				return 1;
+			}
+		}
+		
 		if(p->type == STX_CHUNK) {
 			fprintf(t->fp, "\n\nmodule.exports = ");
 			t->retstmt = TRUE;
@@ -323,7 +338,6 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 			fprintf(t->fp, "return ");
 		}
 		int val = trans_syntax_node_children(t, n);
-		fprintf(t->fp, "\n");
 		return val;
 	}
 	case STMT_DO:
@@ -351,12 +365,52 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 	}
 	case STMT_FOR_IN:
 	{
-		//todo:
-		return 1;
+		log_error("unsupport stmt %d:%s", n->lineno, syntax_statement_tag_string(stmt->tag));
+		return 0;
 	}
 	case STMT_FOR_IT:
 	{
-		//todo:
+		fprintf(t->fp, "\n{\n");
+
+		struct syntax_node *vn = n->children;
+		fprintf(t->fp, "let value = ");
+		int val = trans_syntax_expression(t, vn);
+		if(!val) return 0;
+		fprintf(t->fp, "\n");
+
+		struct syntax_node *ln = vn->next;
+		fprintf(t->fp, "let limit = ");
+		val = trans_syntax_expression(t, ln);
+		if(!val) return 0;
+		fprintf(t->fp, "\n");
+
+		struct syntax_node *sn = ln->next;
+		if(sn->type == STX_EXPRESSION) {
+			fprintf(t->fp, "let step = ");
+			int val = trans_syntax_expression(t, sn);
+			if(!val) return 0;
+			fprintf(t->fp, "\n");			
+		} else {
+			fprintf(t->fp, "let step = 1\n");
+		}
+		fprintf(t->fp, "value = value - step\n");
+		fprintf(t->fp, "while(true) {\n");
+		fprintf(t->fp, "value = value + step\n");
+		fprintf(t->fp, "if(step >= 0 && value > limit) break\n");
+		fprintf(t->fp, "if(step < 0 && value < limit) break\n");
+		struct syntax_node *block = n->children;
+		while(block && block->type != STX_BLOCK) block = block->next;
+		if(block) {
+			int val = trans_syntax_block(t, block);
+			if(!val) return 0;
+		} else {
+			log_error("missing block in for stmt %d:%s",
+					  n->lineno,
+					  syntax_statement_tag_string(stmt->tag));
+			return 0;
+		}
+		fprintf(t->fp, "}\n"); //while stmt
+		fprintf(t->fp, "}\n"); //for stmt
 		return 1;
 	}
 	case STMT_IF:
