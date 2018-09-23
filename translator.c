@@ -127,6 +127,7 @@ static int func_is_method(const char *funcname) {
 	return funcname && strstr(funcname, ":");
 }
 
+/*
 static void printf_tab(struct translator *t, struct syntax_node *n) {
 	struct syntax_node *p = n;
 	int cnt = -2;
@@ -140,6 +141,7 @@ static void printf_tab(struct translator *t, struct syntax_node *n) {
 		}
 	}
 }
+*/
 
 static struct translator *translator = NULL;
 static void exports_handler(const char *name, struct symbol *s) {
@@ -335,19 +337,12 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 	}
 	case STMT_RETURN:
 	{
-		struct syntax_node *p = n->parent->parent;
-		if(syntax_node_children_count(n) > 1) {
-			log_error("unsupport multiple return %d:%s",
-					  n->lineno,
-					  syntax_statement_tag_string(stmt->tag));
-			return 0;
-		}
-		
+		struct syntax_node *p = n->parent->parent;		
 		if(!n->children) {
 			if(p->type == STX_CHUNK) {
 				return 1;
 			} else {
-				fprintf(t->fp, "return ");
+				fprintf(t->fp, "return");
 				return 1;
 			}
 		}
@@ -358,8 +353,21 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 		} else {
 			fprintf(t->fp, "return ");
 		}
-		int val = trans_syntax_node_children(t, n);
-		return val;
+
+		if(syntax_node_children_count(n) > 1) {
+			fprintf(t->fp, "[");
+		}
+		struct syntax_node *c = n->children;
+		while(c) {
+			int val = trans_syntax_expression(t, c);
+			if(!val) return 0;
+			if(c->next) fprintf(t->fp, ",");
+			c = c->next;
+		}
+		if(syntax_node_children_count(n) > 1) {
+			fprintf(t->fp, "]");
+		}
+		return 1;
 	}
 	case STMT_DO:
 	{
@@ -386,8 +394,83 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 	}
 	case STMT_FOR_IN:
 	{
-		log_error("unsupport stmt %d:%s", n->lineno, syntax_statement_tag_string(stmt->tag));
-		return 0;
+		fprintf(t->fp, "\n{\n");
+
+		struct syntax_node *e = n->children;
+		if(((struct syntax_expression *)e)->tag == EXP_FCALL && syntax_node_sibling_count(e) == 1) {
+			fprintf(t->fp, "let retvals = ");
+			int val = trans_syntax_expression(t, e);
+			if(!val) return 0;
+			fprintf(t->fp, "\n");
+			
+			fprintf(t->fp, "let ftmp = retvals[0]\n");
+			fprintf(t->fp, "let stmp = retvals[1]\n");
+			fprintf(t->fp, "let vtmp = retvals[2]\n");
+		} else {
+			fprintf(t->fp, "let ftmp = ");
+			int val = trans_syntax_expression(t, e);
+			if(!val) return 0;
+			fprintf(t->fp, "\n");
+
+			e = e->next;
+			if(!e) {
+				log_error("missing exp for in stmt %d:%s",
+						  n->lineno,
+						  syntax_expression_tag_string(stmt->tag));
+				return 0;
+			}
+			fprintf(t->fp, "let stmp = ");
+			val = trans_syntax_expression(t, e);
+			if(!val) return 0;
+			fprintf(t->fp, "\n");
+
+			e = e->next;
+			if(!e) {
+				log_error("missing exp for in stmt %d:%s",
+						  n->lineno,
+						  syntax_expression_tag_string(stmt->tag));
+				return 0;
+			}			
+			fprintf(t->fp, "let vtmp = ");
+			val = trans_syntax_expression(t, e);
+			if(!val) return 0;
+			fprintf(t->fp, "\n");
+		}
+
+		fprintf(t->fp, "while(true) {\n");
+		fprintf(t->fp, "let vs = ftmp(stmp, vtmp)\n");
+		fprintf(t->fp, "if(vs[0] == null) break\n");
+		fprintf(t->fp, "vtmp = vs[0]\n");
+
+		int idx = 0;
+		char *p = stmt->value.name;
+		while(*p != '\0') {
+			fprintf(t->fp, "let ");
+			while(*p != '\0' && *p != ',') {
+				fputc(*p, t->fp);
+				p++;
+			}
+			fprintf(t->fp, " = vs[%d]\n", idx);
+			if(*p != '\0') {
+				p++;
+				idx++;
+			}
+		}
+
+		struct syntax_node *block = n->children;
+		while(block && block->type != STX_BLOCK) block = block->next;
+		if(block) {
+			int val = trans_syntax_block(t, block);
+			if(!val) return 0;
+		} else {
+			log_error("missing block in for stmt %d:%s",
+					  n->lineno,
+					  syntax_statement_tag_string(stmt->tag));
+			return 0;
+		}
+		fprintf(t->fp, "}\n"); //while
+		fprintf(t->fp, "}\n"); //for
+		return 1;
 	}
 	case STMT_FOR_IT:
 	{
@@ -419,6 +502,10 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 		fprintf(t->fp, "value = value + step\n");
 		fprintf(t->fp, "if(step >= 0 && value > limit) break\n");
 		fprintf(t->fp, "if(step < 0 && value < limit) break\n");
+		
+		fprintf(t->fp, "let ");
+		fprintf(t->fp, stmt->value.name);
+		fprintf(t->fp, " = value\n");
 		struct syntax_node *block = n->children;
 		while(block && block->type != STX_BLOCK) block = block->next;
 		if(block) {
@@ -535,7 +622,7 @@ static int trans_syntax_expression(struct translator *t, struct syntax_node *n) 
 		
 	case EXP_NUMBER:
 	case EXP_STRING:
-		fprintf(t->fp, exp->value.string);
+		fprintf(t->fp, "%s", exp->value.string);
 		return 1;
 		
 	case EXP_PARENTHESIS:
@@ -682,6 +769,12 @@ static int trans_syntax_expression(struct translator *t, struct syntax_node *n) 
 	}
 
 	case EXP_DOTS:
+	{
+		//can only be used in variable arguments in lua
+		fprintf(t->fp, "arguments");
+		return 1;
+	}
+
 	case EXP_EXP:
 	case EXP_FDIV:
 		log_error("unsupport expression %d:%s",
@@ -742,18 +835,24 @@ static int trans_syntax_variable(struct translator *t, struct syntax_node *n) {
 static int trans_syntax_function(struct translator *t, struct syntax_node *n) {
 	struct syntax_function *func = (struct syntax_function *)n;
 	log_info("trans function %d, name:%s", n->lineno, func->name ? func->name : "");
-	
-	fprintf(t->fp, "function ");
+
 	if(func->name) {
-		char *p = func->name;
-		while(p && *p != '\0') {
-			if(*p == ':') {
-				fputc('.', t->fp);
-			} else {
-				fputc(*p, t->fp);
+		if((strstr(func->name, ".") || strstr(func->name, ":"))) {
+			char *p = func->name;
+			while(p && *p != '\0') {
+				if(*p == ':') {
+					fputc('.', t->fp);
+				} else {
+					fputc(*p, t->fp);
+				}
+				p++;
 			}
-			p++;
+			fprintf(t->fp, " = function ");
+		} else {
+			fprintf(t->fp, "function %s ", func->name);
 		}
+	} else {
+		fprintf(t->fp, " function ");
 	}
 	
 	fprintf(t->fp, "(");
@@ -765,14 +864,14 @@ static int trans_syntax_function(struct translator *t, struct syntax_node *n) {
 		}
 	} else {
 		if(func->pars) {
-			if(strstr(func->pars, "...")) {
-				log_error("unsupported variable parameters %d, func:%s, pars:%s",
-						  n->lineno,
-						  func->name ? func->name : "",
-						  func->pars);
-				return 0;
+			char *p = func->pars;
+			while(p && *p != '\0') {
+				//skip variable parameters ...
+				if(*p != '.') {
+					fputc(*p, t->fp);
+				}
+				p++;
 			}
-			fprintf(t->fp, func->pars);
 		}
 	}
 	fprintf(t->fp, ")");
@@ -798,7 +897,7 @@ static int trans_syntax_functioncall(struct translator *t, struct syntax_node *n
 
 	val = trans_syntax_argument(t, &arg->n);
 	if(!val) return 0;
-	
+
 	fprintf(t->fp, ")");
 	return val;
 }
