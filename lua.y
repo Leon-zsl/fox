@@ -815,7 +815,7 @@ parlist:		namelist
 				}
 		|		DOTS
 				{
-					$$ = "...";
+					$$ = fox_strdup("...");
 				}
 		;
 

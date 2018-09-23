@@ -76,7 +76,6 @@ int process(const char *srcpath, const char *destpath) {
 			return -1;
 		}
 
-		log_info("translate file:%s", destpath);
 		val = translate(destpath, tree, table);
 		syntax_tree_release(tree);
 		symbol_table_release(table);

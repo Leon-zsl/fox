@@ -354,7 +354,7 @@ struct syntax_statement *create_syntax_statement() {
 
 void release_syntax_statement(struct syntax_statement *stmt) {
 	syntax_node_release_children(&stmt->n);
-	//todo: maybe should free name according to the tag
+	free(stmt->value.name);
 	free(stmt);
 }
 
@@ -368,7 +368,7 @@ struct syntax_expression *create_syntax_expression() {
 
 void release_syntax_expression(struct syntax_expression *exp) {
 	syntax_node_release_children(&exp->n);
-	//todo: maybe should free string according to the tag
+	free(exp->value.string);
 	free(exp);	
 }
 
