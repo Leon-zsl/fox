@@ -422,7 +422,7 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 			fprintf(t->fp, "\n");
 
 			e = e->next;
-			if(!e) {
+			if(!e || e->type != STX_EXPRESSION) {
 				log_error("missing exp for in stmt %d:%s",
 						  n->lineno,
 						  syntax_expression_tag_string(stmt->tag));
@@ -434,7 +434,7 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 			fprintf(t->fp, "\n");
 
 			e = e->next;
-			if(!e) {
+			if(!e || e->type != STX_EXPRESSION) {
 				log_error("missing exp for in stmt %d:%s",
 						  n->lineno,
 						  syntax_expression_tag_string(stmt->tag));
@@ -828,14 +828,14 @@ static int trans_syntax_variable(struct translator *t, struct syntax_node *n) {
 			 var->name ? var->name : "");
 	switch(var->tag) {
 	case VAR_NORMAL:
-		fprintf(t->fp, var->name);
+		fprintf(t->fp, "%s", var->name);
 		return 1;
 	case VAR_KEY:
 	{
 		int val = trans_syntax_node_children(t, n);
 		if(!val) return 0;
 		fprintf(t->fp, ".");
-		fprintf(t->fp, var->name);
+		fprintf(t->fp, "%s", var->name);
 		return 1;
 	}
 	case VAR_INDEX:
