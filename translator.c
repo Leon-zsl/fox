@@ -589,9 +589,11 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 		struct syntax_node *p = n->parent->parent;
 		if(p->type == STX_CHUNK) {
 			struct syntax_function *func = (struct syntax_function *)n->children;
-			struct symbol *s = symbol_create(func->name, &func->n);
-			symbol_table_insert(t->table, s);
-			t->retstmt |= RET_SYMBOL;
+			if(func->name && !strstr(func->name, ".") && !strstr(func->name, ":")) {
+				struct symbol *s = symbol_create(func->name, &func->n);
+				symbol_table_insert(t->table, s);
+				t->retstmt |= RET_SYMBOL;
+			}
 		}
 		return trans_syntax_function(t, n->children);
 	}
