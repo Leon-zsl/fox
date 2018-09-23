@@ -163,6 +163,8 @@ static int trans_syntax_node_children(struct translator *t, struct syntax_node *
 }
 
 static int trans_syntax_chunk(struct translator *t, struct syntax_node *n) {
+	log_info("trans chunk %d", n->lineno);
+	
 	int val = trans_syntax_node_children(t, n);
 	if(!val) return 0;
 
@@ -179,6 +181,8 @@ static int trans_syntax_chunk(struct translator *t, struct syntax_node *n) {
 }
 
 static int trans_syntax_block(struct translator *t, struct syntax_node *n) {
+	log_info("trans block %d", n->lineno);
+
 	if(n->parent->type != STX_CHUNK) fprintf(t->fp, " {\n");
 	int val = trans_syntax_node_children(t, n);
 	if(n->parent->type != STX_CHUNK) fprintf(t->fp, "\n}\n");
@@ -881,6 +885,8 @@ static int trans_syntax_function(struct translator *t, struct syntax_node *n) {
 
 static int trans_syntax_functioncall(struct translator *t, struct syntax_node *n) {
 	struct syntax_functioncall *fcall = (struct syntax_functioncall *)n;
+	log_info("trans function call %d", n->lineno);
+	
 	int val = trans_syntax_expression(t, n->children);
 	if(!val) return 0;
 
@@ -904,6 +910,9 @@ static int trans_syntax_functioncall(struct translator *t, struct syntax_node *n
 
 static int trans_syntax_argument(struct translator *t, struct syntax_node *n) {
 	struct syntax_argument *arg = (struct syntax_argument *)n;
+	log_info("trans argument %d:%s",
+			 n->lineno,
+			 syntax_argument_tag_string(arg->tag));
 	switch(arg->tag) {
 	case ARG_EMPTY:
 		return 1;
@@ -935,6 +944,7 @@ static int trans_syntax_argument(struct translator *t, struct syntax_node *n) {
 }
 
 static int trans_syntax_table(struct translator *t, struct syntax_node *n) {
+	log_info("trans table %d", n->lineno);
 	if(!n->children) {
 		fprintf(t->fp, "{}");
 		return 1;
