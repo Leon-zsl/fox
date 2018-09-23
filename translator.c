@@ -328,10 +328,15 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 	case STMT_EMPTY:
 		return 1;
 	case STMT_LABEL:
+	{
+		fprintf(t->fp, "%s:\n", stmt->value.name);
+		return 1;
+	}
 	case STMT_GOTO:
 	{
-		log_error("unsupport stmt %d:%s", n->lineno, syntax_statement_tag_string(stmt->tag));
-		return 0;
+		//we support continue label not break label
+		fprintf(t->fp, "continue %s", stmt->value.name);
+		return 1;
 	}
 	case STMT_BREAK:
 	{
@@ -661,6 +666,30 @@ static int trans_syntax_expression(struct translator *t, struct syntax_node *n) 
 		return 1;
 	}
 
+	case EXP_EXP:
+	{
+		fprintf(t->fp, "Math.pow(");
+		int val = trans_syntax_expression(t, n->children);
+		if(!val) return 0;
+		fprintf(t->fp, ", ");
+		val = trans_syntax_expression(t, n->children->next);
+		if(!val) return 0;
+		
+		fprintf(t->fp, ")");
+		return 1;
+	}
+	case EXP_FDIV:
+	{
+		fprintf(t->fp, "Math.floor(");
+		int val = trans_syntax_expression(t, n->children);
+		if(!val) return 0;
+		fprintf(t->fp, " / ");
+		val = trans_syntax_expression(t, n->children->next);
+		if(!val) return 0;		
+		fprintf(t->fp, ")");
+		return 1;
+	}
+
 	case EXP_XOR:
 	{
 		int val = trans_syntax_expression(t, n->children);
@@ -778,13 +807,6 @@ static int trans_syntax_expression(struct translator *t, struct syntax_node *n) 
 		fprintf(t->fp, "arguments");
 		return 1;
 	}
-
-	case EXP_EXP:
-	case EXP_FDIV:
-		log_error("unsupport expression %d:%s",
-				  n->lineno,
-				  syntax_expression_tag_string(exp->tag));
-		return 0;
 
 	default:
 		log_assert(FALSE, "unknown expression %d:%d %s",
@@ -950,27 +972,14 @@ static int trans_syntax_table(struct translator *t, struct syntax_node *n) {
 		return 1;
 	}
 
-	struct syntax_field *f = (struct syntax_field *)n->children;
-	int tag = FIELD_INVALID;
-	while(f) {
-		if(tag == FIELD_INVALID) {
-			tag = f->tag;
-		}
-		if(tag != f->tag) {
-			log_error("unsupport composite table %d", n->lineno);
-			return 0;
-		}
-	}
-
-	if(tag != FIELD_KEY && tag != FIELD_SINGLE) {
-		log_error("unsupport composite table %d", n->lineno);
-		return 0;
-	}
-
-	if(tag == FIELD_KEY) {
-		fprintf(t->fp, "{");		
-	} else if(tag == FIELD_SINGLE) {
+	//struct syntax_table *table = (struct syntax_table *)n;
+	struct syntax_field * field = (struct syntax_field *)n->children;
+	if(field->tag == FIELD_KEY) {
+		fprintf(t->fp, "{");
+	} else if(field->tag == FIELD_SINGLE) {
 		fprintf(t->fp, "[");
+	} else {
+		fprintf(t->fp, "{");
 	}
 
 	struct syntax_node *c = n->children;
@@ -984,10 +993,12 @@ static int trans_syntax_table(struct translator *t, struct syntax_node *n) {
 		c = c->next;
 	}
 
-	if(tag == FIELD_KEY) {
+	if(field->tag == FIELD_KEY) {
 		fprintf(t->fp, "}");
-	} else if(tag == FIELD_SINGLE) {
+	} else if(field->tag == FIELD_SINGLE) {
 		fprintf(t->fp, "]");
+	} else {
+		fprintf(t->fp, "}");
 	}
 	return 1;
 }
@@ -1001,14 +1012,14 @@ static int trans_syntax_field(struct translator *t, struct syntax_node *n) {
 	switch(field->tag) {
 	case FIELD_INDEX:
 	{
-		log_error("unsupport field %d:%s",
-				  n->lineno,
-				  syntax_field_tag_string(field->tag));
-		return 0;
+		int val = trans_syntax_expression(t, n->children);
+		if(!val) return 0;
+		fprintf(t->fp, ": ");
+		return trans_syntax_expression(t, n->children->next);
 	}
 	case FIELD_KEY:
 	{
-		fprintf(t->fp, field->name);
+		fprintf(t->fp, "%s", field->name);
 		fprintf(t->fp, ": ");
 		return trans_syntax_expression(t, n->children);
 	}
