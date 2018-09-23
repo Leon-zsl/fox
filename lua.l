@@ -17,7 +17,7 @@ extern char *multiline_string(void);
 
 %%
 
-"--[["					multiline_comment();
+"--[[".*				multiline_comment();
 "--".*					;
 
 [ \t]+					;
@@ -64,7 +64,7 @@ extern char *multiline_string(void);
 
 \"[^\"]*\" 				{ yylval.string = fox_strdup(yytext); return STRING; }
 \'[^\']*\' 				{ yylval.string = fox_strdup(yytext); return STRING; }
-"[["		 			{ yylval.string = fox_strdup(multiline_string()); return STRING; }
+"[[".*		 			{ yylval.string = fox_strdup(multiline_string()); return STRING; }
 
 [0-9]+("."[0-9]*)?				  | 
 ([0-9]+)?"."[0-9]+				  |
