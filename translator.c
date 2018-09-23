@@ -956,7 +956,7 @@ static int trans_syntax_argument(struct translator *t, struct syntax_node *n) {
 	case ARG_TABLE:
 		return trans_syntax_table(t, n->children);
 	case ARG_STRING:
-		fprintf(t->fp, arg->name);
+		fprintf(t->fp, "%s", arg->name);
 		return 1;
 	default:
 		log_assert(FALSE, "unknown argument %d:%d %s",
