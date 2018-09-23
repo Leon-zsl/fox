@@ -8,16 +8,20 @@ extern char *yytext;
 
 #define yyinfo(msg) log_info("%s:%d, %s\n", yyfilename, yylineno, (msg))
 #define yyerror(msg) log_error("%s:%d, %s\n", yyfilename, yylineno, (msg))
+
+extern void discard_multiline_comment(void);
 %}
 
 %option never-interactive
 
 %%
 
+"--[["					discard_multiline_comment();
+"--".*					;
+
 [ \t]+					;
 \r?\n					yylineno++;
 \r\n?					yylineno++;
-"--".*					;
 
 "function"				return FUNCTION;
 "local"					return LOCAL;
@@ -83,4 +87,17 @@ const char *yyget_filename() {
 int yywrap(void) {
 	yylineno = 1;
 	return 1;
+}
+
+void discard_multiline_comment(void) {
+    char c, c1;
+loop:
+    while ((c = input()) != ']' && c != '\0');
+	if(c == '\0') return;
+
+    if ((c1 = input()) != ']' && c1 != '\0')
+    {
+        unput(c1);
+        goto loop;
+    }
 }
