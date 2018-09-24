@@ -9,7 +9,6 @@ extern char *yytext;
 #define yyinfo(msg) log_info("%s:%d, %s\n", yyfilename, yylineno, (msg))
 #define yyerror(msg) log_error("%s:%d, %s\n", yyfilename, yylineno, (msg))
 
-extern void multiline_comment(void);
 extern char *multiline_string(void);
 %}
 
@@ -17,7 +16,7 @@ extern char *multiline_string(void);
 
 %%
 
-"--[[".*				multiline_comment();
+"--[["([^\]])*"]]"		;
 "--".*					;
 
 [ \t]+					;
@@ -125,17 +124,4 @@ loop:
 	tmp_mlstr[idx++] = '\0';
 	log_info("multilie str:%s", tmp_mlstr);
 	return tmp_mlstr;
-}
-
-void multiline_comment(void) {
-	char c,c1;
-loop:
-    while ((c = input()) != ']' && c != '\0');
-	if(c == '\0') return;
-
-    if ((c1 = input()) != ']' && c1 != '\0')
-    {
-        unput(c1);
-        goto loop;
-    }
 }
