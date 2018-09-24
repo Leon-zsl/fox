@@ -387,14 +387,14 @@ exp:			prefixexp
 		|		primaryexp
 		|		funcexp
 		|		tableexp
-		|		'(' exp ')'
-				{
-					struct syntax_expression *exp = create_syntax_expression();
-					exp->n.lineno = yylineno;
-					exp->tag = EXP_PARENTHESIS;
-					syntax_node_push_child_tail(&exp->n, &($2->n));
-					$$ = exp;
-				}
+		/* |		'(' exp ')' */
+		/* 		{ */
+		/* 			struct syntax_expression *exp = create_syntax_expression(); */
+		/* 			exp->n.lineno = yylineno; */
+		/* 			exp->tag = EXP_PARENTHESIS; */
+		/* 			syntax_node_push_child_tail(&exp->n, &($2->n)); */
+		/* 			$$ = exp; */
+		/* 		} */
 		;
 
 prefixexp:		var
@@ -413,7 +413,7 @@ prefixexp:		var
 					syntax_node_push_child_tail(&exp->n, &($1->n));
 					$$ = exp;
 				}
-/*								
+				/* has shift/reduce and reduce/reduce conflicts*/
 		|		'(' exp ')'
 				{
 					struct syntax_expression *exp = create_syntax_expression();
@@ -422,7 +422,7 @@ prefixexp:		var
 					syntax_node_push_child_tail(&exp->n, &($2->n));
 					$$ = exp;
 				}
-*/
+
 		;
 
 constexp:		NIL
