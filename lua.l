@@ -9,7 +9,7 @@ extern char *yytext;
 #define yyinfo(msg) log_info("%s:%d, %s\n", yyfilename, yylineno, (msg))
 #define yyerror(msg) log_error("%s:%d, %s\n", yyfilename, yylineno, (msg))
 
-extern char *multiline_string(void);
+extern char *multiline_string(const char *str);
 %}
 
 %option never-interactive
@@ -61,9 +61,9 @@ extern char *multiline_string(void);
 
 [a-zA-Z_][a-zA-Z0-9_]* 	{ yylval.string = fox_strdup(yytext); return NAME; }
 
-\"[^\"]*\" 				{ yylval.string = fox_strdup(yytext); return STRING; }
+\"[^\"]*\"				|
 \'[^\']*\' 				{ yylval.string = fox_strdup(yytext); return STRING; }
-"[[".*		 			{ yylval.string = fox_strdup(multiline_string()); return STRING; }
+"[["([^\]])*"]]"	    { yylval.string = multiline_string(yytext); return STRING; }
 
 [0-9]+("."[0-9]*)?				  | 
 ([0-9]+)?"."[0-9]+				  |
@@ -90,38 +90,33 @@ int yywrap(void) {
 	return 1;
 }
 
-static char tmp_mlstr[4096] = {'\0'};
-char *multiline_string(void) {
-	tmp_mlstr[4095] = '\0';
-	tmp_mlstr[0] = '\"';
-	int idx = 1;
-	char c,c1;
-loop:
-    while ((c = input()) != ']' && c != '\0' && idx < 4094) {
-		if(c == '\r') {
-			idx++;
-			continue;
-		}
-		if(c == '\n') {
-			tmp_mlstr[idx++] = '\\';
-			tmp_mlstr[idx++] = 'n';
-			continue;
-		}
-		tmp_mlstr[idx++] = c;
-	}
-	if(idx >= 4094) {
-		yyerror("too long multiline string");
-		return "";
-	}
-	if(c == '\0') return tmp_mlstr;
+char *multiline_string(const char *str) {
+	static char tmpstr[4096] = { '\0' };
+	memset(tmpstr, 0, 4096);
 
-    if ((c1 = input()) != ']' && c1 != '\0')
-    {
-        unput(c1);
-        goto loop;
-    }
-	tmp_mlstr[idx++] = '\"';
-	tmp_mlstr[idx++] = '\0';
-	log_info("multilie str:%s", tmp_mlstr);
-	return tmp_mlstr;
+	//1st 2 chars are [ and [, last 2 chars are ] and ]
+	int srcidx = 2;
+	int dstidx = 0;
+	tmpstr[dstidx++] = '\"';
+	while(srcidx < strlen(str) - 2 && dstidx < 4094) {
+		char c = str[srcidx++];
+		if(c == '\r') {
+			if(str[srcidx] != '\n') {
+				tmpstr[dstidx++] = '\\';
+				tmpstr[dstidx++] = 'n';
+			} else {
+				continue;
+			}
+		} else if(c == '\n') {
+			tmpstr[dstidx++] = '\\';
+			tmpstr[dstidx++] = 'n';
+		} else {
+			tmpstr[dstidx++] = c;
+		}
+	}
+	log_assert(dstidx < 4094, "too long multiline string found %d:%s",
+			   yylineno, str);
+	tmpstr[dstidx] = '\"';
+	
+	return fox_strdup(tmpstr);
 }
