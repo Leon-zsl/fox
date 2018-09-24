@@ -405,6 +405,7 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 	{
 		fprintf(t->fp, "\n{\n");
 
+		bool needvtmp = TRUE;
 		struct syntax_node *e = n->children;
 		if(((struct syntax_expression *)e)->tag == EXP_FCALL && syntax_node_sibling_count(e) == 1) {
 			fprintf(t->fp, "let retvals = ");
@@ -434,22 +435,24 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 			fprintf(t->fp, "\n");
 
 			e = e->next;
-			if(!e || e->type != STX_EXPRESSION) {
-				log_error("missing exp for in stmt %d:%s",
-						  n->lineno,
-						  syntax_expression_tag_string(stmt->tag));
-				return 0;
-			}			
-			fprintf(t->fp, "let vtmp = ");
-			val = trans_syntax_expression(t, e);
-			if(!val) return 0;
-			fprintf(t->fp, "\n");
+			if(e && e->type == STX_EXPRESSION) {
+				fprintf(t->fp, "let vtmp = ");
+				val = trans_syntax_expression(t, e);
+				if(!val) return 0;
+				fprintf(t->fp, "\n");
+			} else {
+				needvtmp = FALSE;
+			}
 		}
 
 		fprintf(t->fp, "while(true) {\n");
-		fprintf(t->fp, "let vs = ftmp(stmp, vtmp)\n");
+		if(needvtmp)
+			fprintf(t->fp, "let vs = ftmp(stmp, vtmp)\n");
+		else
+			fprintf(t->fp, "let vs = ftmp(stmp)\n");
 		fprintf(t->fp, "if(vs[0] == null) break\n");
-		fprintf(t->fp, "vtmp = vs[0]\n");
+		if(needvtmp)
+			fprintf(t->fp, "vtmp = vs[0]\n");
 
 		int idx = 0;
 		char *p = stmt->value.name;
