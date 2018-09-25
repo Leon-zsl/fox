@@ -44,7 +44,7 @@ lua_y.c: lua.y
 	$(YACC) -d -v -o $@ $<
 
 lua_l.c: lua.l
-	$(LEX) -o $@ $<
+	$(LEX) -d -o $@ $<
 
 test: test.c
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $< $(LDFLAGS) $(LIBS)

@@ -10,6 +10,7 @@ void yyset_in(FILE *in);
 void yyset_out(FILE *out);
 void yyset_lineno(int lineno);
 void yyset_filename(const char *name);
+void yyset_debug(int debug);
 
 extern struct syntax_tree *parse_tree;
 extern struct symbol_table *parse_table;
@@ -27,6 +28,11 @@ int parse(const char *filename,
 	yyset_out(stdout);
 	yyset_filename(filename);
 	yyset_lineno(1);
+#ifdef DEBUG
+	yyset_debug(1);
+#else
+	yyset_debug(0);
+#endif
 
 	parse_tree = syntax_tree_create();
 	parse_table = symbol_table_create();	
