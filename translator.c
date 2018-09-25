@@ -612,7 +612,22 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 	}
 	case STMT_FCALL:
 	{
-		int val = trans_syntax_functioncall(t, n->children);
+		struct syntax_node *c = n->children;
+		if(c->type != STX_EXPRESSION) {
+			log_error("stmt fcall with non-exp node %d:%s",
+					  c->lineno,
+					  syntax_node_type_string(c->type));
+			return 0;
+		}
+		
+		struct syntax_expression *ce = (struct syntax_expression *)c;
+		if(ce->tag != EXP_FCALL) {
+			log_error("stmt fcall with non-exp-fcall node %d:%s",
+					  c->lineno,
+					  syntax_expression_tag_string(ce->tag));
+			return 0;
+		}
+		int val = trans_syntax_functioncall(t, c->children);
 		fprintf(t->fp, "\n");
 		return val;
 	}

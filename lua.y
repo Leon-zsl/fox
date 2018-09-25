@@ -330,7 +330,8 @@ varstmt:		LOCAL namelist
 				}				
 		;
 
-funcstmt:		funcall
+funcstmt:		/*funcall will lead to reduce/reduce conflict*/
+				prefixexp
 				{
 					struct syntax_statement *stmt = create_syntax_statement();
 					stmt->n.lineno = yylineno;
