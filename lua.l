@@ -69,7 +69,7 @@ extern char *multiline_string(const char *str);
 ([0-9]+)?"."[0-9]+				  |
 [0-9]+("."[0-9]*)?[eE][+-]?[0-9]+ |
 ([0-9]+)?"."[0-9]+[eE][+-]?[0-9]+ |
-0x[0-9a-fA-F]+					  { yylval.string = fox_strdup(yytext); return NUMBER; }
+0[xX][0-9a-fA-F]+				  { yylval.string = fox_strdup(yytext); return NUMBER; }
 
 .						{ return *yytext; }
 
