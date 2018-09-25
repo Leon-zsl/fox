@@ -1,18 +1,23 @@
 # Fox Makefile
 
+debug=0
+
 CC=gcc
 LD=ld
 LEX=flex
 YACC=bison
 
+ifeq ($(debug), 0)
+DEFINES=
+else
 DEFINES=-DDEBUG
-#DEFINES=
+endif
 INCLUDES=
 CFLAGS=-Wall -g -O2 -std=c99 $(DEFINES) $(INCLUDES)
 
 LIBS=
 #LDFLAGS=-ll -ly
-LDFLAGS=
+LDFLAGS=$(LIBS)
 
 SRCS=lua_l.c		\
 	lua_y.c			\
@@ -47,7 +52,7 @@ lua_l.c: lua.l
 	$(LEX) -d -o $@ $<
 
 test: test.c
-	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $< $(LDFLAGS) $(LIBS)
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 
 test_clean:
 	rm -rf test.o test
