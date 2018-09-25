@@ -414,7 +414,6 @@ prefixexp:		var
 					syntax_node_push_child_tail(&exp->n, &($1->n));
 					$$ = exp;
 				}
-				/* has shift/reduce and reduce/reduce conflicts*/
 		|		'(' exp ')'
 				{
 					struct syntax_expression *exp = create_syntax_expression();
