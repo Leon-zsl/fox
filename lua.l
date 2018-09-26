@@ -9,14 +9,15 @@ extern char *yytext;
 #define yyinfo(msg) log_info("%s:%d, %s\n", yyfilename, yylineno, (msg))
 #define yyerror(msg) log_error("%s:%d, %s\n", yyfilename, yylineno, (msg))
 
-extern char *multiline_string(const char *str);
+extern void multiline_comment(void);
+extern char *multiline_string(void);
 %}
 
 %option never-interactive
 
 %%
 
-"--[["([^\]])*"]]"		;
+"--["=*"["			{ multiline_comment(); }
 "--".*					;
 
 [ \t]+					;
@@ -63,7 +64,7 @@ extern char *multiline_string(const char *str);
 
 \"[^\"]*\"				|
 \'[^\']*\' 				{ yylval.string = fox_strdup(yytext); return STRING; }
-"[["([^\]])*"]]"	    { yylval.string = multiline_string(yytext); return STRING; }
+"["(=)*"["			    { yylval.string = multiline_string(); return STRING; }
 
 [0-9]+("."[0-9]*)?				  | 
 ([0-9]+)?"."[0-9]+				  |
@@ -90,33 +91,118 @@ int yywrap(void) {
 	return 1;
 }
 
-char *multiline_string(const char *str) {
+char *multiline_string(void) {
+	int eqcnt = 0;
+	char *p = yytext;
+	while(*p != '\0') {
+		if(*p == '=') {
+			eqcnt++;
+		}
+		p++;
+	}
+	
 	static char tmpstr[4096] = { '\0' };
 	memset(tmpstr, 0, 4096);
-
-	//1st 2 chars are [ and [, last 2 chars are ] and ]
-	int srcidx = 2;
+	
 	int dstidx = 0;
 	tmpstr[dstidx++] = '\"';
-	while(srcidx < strlen(str) - 2 && dstidx < 4094) {
-		char c = str[srcidx++];
-		if(c == '\r') {
-			if(str[srcidx] != '\n') {
-				tmpstr[dstidx++] = '\\';
-				tmpstr[dstidx++] = 'n';
-			} else {
-				continue;
-			}
-		} else if(c == '\n') {
+	
+	int idx = 0;
+	int cnt = eqcnt;
+	static char tmpchar[64] = { '\0' };
+	char c, c1;
+loop:	
+    while ((c = input()) != ']' && c != '\0') {
+		if(c == '\n') {
 			tmpstr[dstidx++] = '\\';
 			tmpstr[dstidx++] = 'n';
+			yylineno++;
+		} else if(c == '\r') {
+			continue;
 		} else {
 			tmpstr[dstidx++] = c;
 		}
+		log_assert(dstidx < 4094, "too long multiline string found %d:%s",
+				   yylineno, tmpstr);
 	}
-	log_assert(dstidx < 4094, "too long multiline string found %d:%s",
-			   yylineno, str);
-	tmpstr[dstidx] = '\"';
+    if(c == '\0') {
+		tmpstr[dstidx++] = '\"';
+		return fox_strdup(tmpstr);
+	}
+
+	idx = 0;
+	cnt = eqcnt;	
+	memset(tmpchar, 0, 64);
+	while(cnt > 0) {
+		c1 = input();
+		if(c1 == '=') {
+			tmpchar[idx++] = c1;
+			cnt--;
+			continue;
+		}
+		if(c1 == '\0') {
+			tmpstr[dstidx++] = '\"';
+			return fox_strdup(tmpstr);		
+		}
+
+		unput(c1);
+		for(int i = idx - 1; i >= 0; i--) {
+			unput(tmpchar[i]);
+		}
+		goto loop;
+	}
 	
+    if ((c1 = input()) != ']' && c1 != '\0')
+    {
+        unput(c1);
+		for(int i = idx - 1; i >= 0; i--) {
+			unput(tmpchar[i]);
+		}
+        goto loop;
+    }
+	
+	tmpstr[dstidx] = '\"';
 	return fox_strdup(tmpstr);
+}
+
+void multiline_comment(void) {
+	int eqcnt = 0;
+	char *p = yytext;
+	while(*p != '\0') {
+		if(*p == '=') {
+			eqcnt++;
+		}
+		p++;
+	}
+
+    char c, c1;
+	int cnt;
+loop:
+    while ((c = input()) != ']' && c != '\0') {
+		if(c == '\n') yylineno++;
+	}
+    if(c == '\0') return;
+
+	cnt = eqcnt;
+	while(cnt > 0) {
+		c1 = input();
+		if(c1 == '=') {
+			cnt--;
+			continue;
+		}
+		if(c1 == '\0') {
+			return;
+		}
+
+		unput(c1);
+		goto loop;
+	}
+
+    if ((c1 = input()) != ']' && c1 != '\0')
+    {
+        unput(c1);
+        goto loop;
+    }
+
+	//comment finish
 }
