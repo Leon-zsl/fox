@@ -9,7 +9,7 @@ extern char *yytext;
 #define yyinfo(msg) log_info("%s:%d, %s\n", yyfilename, yylineno, (msg))
 #define yyerror(msg) log_error("%s:%d, %s\n", yyfilename, yylineno, (msg))
 
-extern void multiline_comment(void);
+extern void comment(void);
 extern char *multiline_string(void);
 %}
 
@@ -17,8 +17,7 @@ extern char *multiline_string(void);
 
 %%
 
-"--["=*"["			{ multiline_comment(); }
-"--".*					;
+"--"					{ comment(); }
 
 [ \t]+					;
 \r?\n					yylineno++;
@@ -117,8 +116,6 @@ loop:
 			tmpstr[dstidx++] = '\\';
 			tmpstr[dstidx++] = 'n';
 			yylineno++;
-		} else if(c == '\r') {
-			continue;
 		} else {
 			tmpstr[dstidx++] = c;
 		}
@@ -165,16 +162,7 @@ loop:
 	return fox_strdup(tmpstr);
 }
 
-void multiline_comment(void) {
-	int eqcnt = 0;
-	char *p = yytext;
-	while(*p != '\0') {
-		if(*p == '=') {
-			eqcnt++;
-		}
-		p++;
-	}
-
+void multiline_comment(int level) {
     char c, c1;
 	int cnt;
 loop:
@@ -183,7 +171,7 @@ loop:
 	}
     if(c == '\0') return;
 
-	cnt = eqcnt;
+	cnt = level;
 	while(cnt > 0) {
 		c1 = input();
 		if(c1 == '=') {
@@ -205,4 +193,30 @@ loop:
     }
 
 	//comment finish
+}
+
+void singleline_comment(void) {
+	char c;
+	while((c = input()) != '\n' && c != '\0');
+	return;
+}
+
+void comment(void) {
+	char c = input();
+	if(c != '[') {
+		singleline_comment();
+		return;
+	}
+
+	int level = 0;
+	while((c = input()) == '=') level++;
+	if(c == '\0') return;
+	if(c == '[') {
+		multiline_comment(level);
+		return;
+	}
+	if(c == '\n') {
+		yylineno++;
+	}
+	singleline_comment();
 }
