@@ -273,6 +273,39 @@ const char *syntax_field_tag_string(enum syntax_field_tag tag) {
 	return syntax_field_tag_name[tag];
 }
 
+struct symbol_table *syntax_node_symbol_table(struct syntax_node *n) {
+	struct syntax_node *p = n;
+	while(p && p->type != STX_BLOCK) p = p->parent;
+	if(!p) return NULL;
+	return ((struct syntax_block *)p)->sym;
+}
+
+struct symbol_table *syntax_node_parent_symbol_table(struct syntax_node *n) {
+	struct syntax_node *p = n;
+	while(p && p->type != STX_BLOCK) p = p->parent;
+	if(!p) return NULL;
+
+	//found 1st block, then to find its parent
+	p = p->parent;
+	while(p && p->type != STX_BLOCK) p = p->parent;
+	if(!p) return NULL;
+	return ((struct syntax_block *)p)->sym;
+}
+
+int chunk_scope(struct syntax_node *n) {
+	struct syntax_node *p = n;
+	while(p && p->type != STX_BLOCK) p = p->next;
+	if(!p) return 0;
+	return p->parent && p->parent->type == STX_CHUNK;
+}
+
+int func_scope(struct syntax_node *n) {
+	struct syntax_node *p = n;
+	while(p && p->type != STX_FUNCTION) p = p->next;
+	if(!p) return 0;
+	return 1;
+}
+
 static void syntax_node_release_children(struct syntax_node *n) {
 	struct syntax_node *c = n->children;
 	while(c) {

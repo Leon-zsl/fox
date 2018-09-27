@@ -56,6 +56,11 @@ struct syntax_block {
 	struct symbol_table *sym;
 };
 
+struct symbol_table *syntax_node_symbol_table(struct syntax_node *n);
+struct symbol_table *syntax_node_parent_symbol_table(struct syntax_node *n);
+int chunk_scope(struct syntax_node *n);
+int func_scope(struct syntax_node *n);
+
 enum syntax_statement_tag {
 	STMT_INVALID,
 	STMT_EMPTY,

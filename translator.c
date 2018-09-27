@@ -52,12 +52,6 @@ int parse(const char *filename,
 	return 1;
 }
 
-enum rettype {
-	RET_NO,
-	RET_EXP,
-	RET_SYMBOL,
-};
-
 struct translator {
 	struct syntax_tree *tree;
 	struct symbol_table *table;
@@ -149,32 +143,16 @@ static void printf_tab(struct translator *t, struct syntax_node *n) {
 }
 */
 
-static bool chunk_scope(struct syntax_node *n) {
-	struct syntax_node *p = n;
-	while(p && p->type != STX_BLOCK) p = p->next;
-	if(!p) return FALSE;
-	return p->parent && p->parent->type == STX_CHUNK;
-}
-
-static int insert_symbol(struct symbol *s, struct syntax_node *n) {
-	struct syntax_node *p = n;
-	while(p && p->type != STX_BLOCK) p = p->parent;
-	if(!p) return 0;
-	struct syntax_block *block = (struct syntax_block *)p;
-	symbol_table_insert(block->sym, s);
-	return 1;
-}
-
-static struct translator *translator = NULL;
-static void exports_handler(const char *name, struct symbol *s) {
-	if(translator) {
-		log_info("exports chunk names %s", name);
-		fprintf(translator->fp, name);
-		fprintf(translator->fp, ":");
-		fprintf(translator->fp, name);
-		fprintf(translator->fp, ",\n");
-	}
-}
+/* static struct translator *translator = NULL; */
+/* static void exports_handler(const char *name, struct symbol *s) { */
+/* 	if(translator) { */
+/* 		log_info("exports chunk names %s", name); */
+/* 		fprintf(translator->fp, name); */
+/* 		fprintf(translator->fp, ":"); */
+/* 		fprintf(translator->fp, name); */
+/* 		fprintf(translator->fp, ",\n"); */
+/* 	} */
+/* } */
 
 static int trans_syntax_node_children(struct translator *t, struct syntax_node *n) {
 	struct syntax_node *c = n->children;
@@ -591,15 +569,6 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 	}
 	case STMT_VAR:
 	{
-		struct syntax_node *c = n->children;
-		while(c && c->type == STX_VARIABLE) {
-			struct syntax_variable *v = (struct syntax_variable *)c;
-			if(v->tag == VAR_NORMAL) {
-				struct symbol *s = symbol_create(v->name, c);
-				insert_symbol(s, c);
-			}
-			c = c->next;
-		}
 		return trans_assign(t, stmt);
 	}
 	case STMT_LOCAL_VAR:
@@ -608,11 +577,6 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 	}
 	case STMT_FUNC:
 	{
-		struct syntax_function *func = (struct syntax_function *)n->children;
-		if(func->name && !strstr(func->name, ".") && !strstr(func->name, ":")) {
-			struct symbol *s = symbol_create(func->name, &func->n);
-			insert_symbol(s, &func->n);
-		}
 		return trans_syntax_function(t, n->children);
 	}
 	case STMT_LOCAL_FUNC:

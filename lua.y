@@ -26,6 +26,130 @@ void yyprint(FILE *file, int type, YYSTYPE value);
 struct syntax_tree *parse_tree = NULL;
 struct symbol_table *parse_table = NULL;
 
+void gen_block_symtable(struct syntax_block *block);
+void gen_node_symtable(struct syntax_block *b, struct syntax_node *n);
+
+void gen_stmt_symtable(struct syntax_block *b, struct syntax_statement *stmt) {
+	struct syntax_node *c = stmt->n.children;
+	switch(stmt->tag) {
+	case STMT_LOCAL_VAR:
+	{
+		char *p = stmt->value.name;
+		int start = 0;
+		int end = 0;
+		while(p[end] != '\0') {
+			while(p[end] != ',' && p[end] != '\0') end++;
+
+			char tmp[end - start + 1];
+			memset(tmp, 0, end - start + 1);
+			strncpy(tmp, p + start, end - start);
+			char *name = fox_strcat("lv_", tmp);
+
+			struct symbol *s = symbol_create(name, SYM_VAR_LOCAL);
+			free(name);
+			symbol_table_insert(b->sym, s);
+			
+			if(p[end] == '\0') break;
+			end++;
+			start = end;
+		}
+
+		c = stmt->n.children;
+		while(c) {
+			gen_node_symtable(b, c);
+			c = c->next;
+		}
+		break;
+	}
+	case STMT_VAR:
+	{
+		if(chunk_scope(&stmt->n)) {
+			while(c && c->type == STX_VARIABLE) {
+				struct syntax_variable *v = (struct syntax_variable *)c;
+				if(v->tag == VAR_NORMAL) {
+					char * name = fox_strcat("v_", v->name);
+					struct symbol *s = symbol_create(name, SYM_VAR);
+					free(name);
+					symbol_table_insert(b->sym, s);
+				}
+				c = c->next;
+			}
+		} else {
+			log_info("skip non chunk scope var stmt:%d %s \n",
+					 stmt->n.lineno,
+					 syntax_statement_tag_string(stmt->tag));
+		}
+
+		c = stmt->n.children;
+		while(c) {
+			gen_node_symtable(b, c);
+			c = c->next;
+		}
+		break;
+	}
+	case STMT_FUNC:
+	{
+		struct syntax_function *func = (struct syntax_function *)c;
+		if(func->name && !strstr(func->name, ".") && !strstr(func->name, ":")) {
+			char * name = fox_strcat("f_", func->name);
+			struct symbol *s = symbol_create(name, SYM_FUNC);
+			free(name);
+			symbol_table_insert(b->sym, s);
+		}
+		gen_node_symtable(b, stmt->n.children);
+		break;
+	}
+	case STMT_LOCAL_FUNC:
+	{
+		struct syntax_function *func = (struct syntax_function *)c;
+		if(func->name && !strstr(func->name, ".") && !strstr(func->name, ":")) {
+			char * name = fox_strcat("lf_", func->name);
+			struct symbol *s = symbol_create(name, SYM_FUNC_LOCAL);
+			free(name);
+			symbol_table_insert(b->sym, s);
+		}
+		gen_node_symtable(b, stmt->n.children);
+		break;
+	}
+	default:
+		c = stmt->n.children;
+		while(c) {
+			gen_node_symtable(b, c);
+			c = c->next;
+		}
+	}
+}
+
+void gen_node_symtable(struct syntax_block *b, struct syntax_node *n) {
+	struct syntax_node *c = n->children;
+	switch(n->type)
+	{
+	case STX_BLOCK:
+		gen_block_symtable((struct syntax_block *)n);
+		break;
+	case STX_STATEMENT:
+		gen_stmt_symtable(b, (struct syntax_statement *)n);
+		break;
+	default:
+		while(c) {
+			gen_node_symtable(b, c);
+			c = c->next;
+		}
+	}
+}
+
+void gen_block_symtable(struct syntax_block *block) {
+	struct syntax_node *c = block->n.children;
+	while(c) {
+		gen_node_symtable(block, c);
+		c = c->next;
+	}
+}
+
+void gen_chunk_symtables(struct syntax_chunk *chunk) {
+	gen_block_symtable((struct syntax_block *)chunk->n.children);
+}
+
 %}
 
 %union {
@@ -92,6 +216,7 @@ struct symbol_table *parse_table = NULL;
 program:		chunk
 				{
 					parse_tree->root = &($1->n);
+					gen_chunk_symtables($1);
 				}
 		;
 
