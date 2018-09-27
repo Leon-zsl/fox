@@ -138,7 +138,7 @@ void syntax_node_walk(struct syntax_node *n, syntax_node_handler h) {
 	h(n);
 	struct syntax_node *c = n->children;
 	while(c) {
-		h(c);
+		syntax_node_walk(c, h);
 		c = c->next;
 	}
 }
