@@ -2,7 +2,7 @@
 #define __SYMBOL_H__
 
 struct symbol {
-	char *name;	/* name must be unique for unique symbol */
+	char *name;	/* used as hmap key */
 	void *udata;
 };
 

@@ -315,7 +315,7 @@ retstmt:		RETURN retend
 				}
 		;
 
-retend:		/* empty*/
+retend:			/* empty */
 		|		';'
 		;
 
@@ -479,7 +479,7 @@ varstmt:		LOCAL namelist
 				}				
 		;
 
-funcstmt:		/*funcall will lead to reduce/reduce conflict*/
+funcstmt:		/* funcall will lead to reduce/reduce conflict */
 				prefixexp
 				{
 					struct syntax_statement *stmt = create_syntax_statement();
@@ -537,14 +537,6 @@ exp:			prefixexp
 		|		primaryexp
 		|		funcexp
 		|		tableexp
-		/* |		'(' exp ')' */
-		/* 		{ */
-		/* 			struct syntax_expression *exp = create_syntax_expression(); */
-		/* 			exp->n.lineno = yylineno; */
-		/* 			exp->tag = EXP_PARENTHESIS; */
-		/* 			syntax_node_push_child_tail(&exp->n, &($2->n)); */
-		/* 			$$ = exp; */
-		/* 		} */
 		;
 
 prefixexp:		var
@@ -1079,12 +1071,6 @@ fieldsep:		','
 		;
 
 %%
-
-/* 
-void yyerror(const char *msg) {
-	log_error("%s:%d, %s at %s \n", yyfilename, yylineno, msg, yytext);
-}
-*/
 
 #if YYDEBUG
 void yyprint(FILE *file, int type, YYSTYPE value)

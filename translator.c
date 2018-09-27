@@ -131,22 +131,6 @@ static int func_is_method(const char *funcname) {
 	return funcname && strstr(funcname, ":");
 }
 
-/*
-static void printf_tab(struct translator *t, struct syntax_node *n) {
-	struct syntax_node *p = n;
-	int cnt = -2;
-	while(p) {
-		if(p->type == STX_CHUNK) {
-			break;
-		}
-		p = p->parent;
-		if(cnt++ >= 0) {
-			fprintf(t->fp, "\t");			
-		}
-	}
-}
-*/
-
 static struct translator *translator = NULL;
 static void exports_handler(const char *name, struct symbol *s) {
 	if(translator) {
@@ -1087,4 +1071,3 @@ static int translate_syntax_node(struct translator *t, struct syntax_node *n) {
 	}
 	return val;
 }
-

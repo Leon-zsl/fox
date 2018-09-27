@@ -17,7 +17,7 @@ static inline size_t hash_string(const char *s) {
 	size_t hash = 5381;
     int c = 0;
     while ((c = *s++)) {
-        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+        hash = ((hash << 5) + hash) + c;
 	}
     return hash;
 }
