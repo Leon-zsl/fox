@@ -176,7 +176,7 @@ static int trans_syntax_chunk(struct translator *t, struct syntax_node *n) {
 		struct syntax_block *block = (struct syntax_block *)n->children;
 		fprintf(t->fp, "\n\nmodule.exports = {\n  ");
 		translator = t;
-		symbol_table_walk(block->sym, exports_handler);
+		symbol_table_walk(block->symtab, exports_handler);
 		fseek(t->fp, -2, SEEK_END);
 		translator = NULL;
 		fprintf(t->fp, "\n}\n");
@@ -191,7 +191,7 @@ static void log_block_symbols(const char *name, struct symbol *s) {
 static int trans_syntax_block(struct translator *t, struct syntax_node *n) {
 	log_debug("trans block %d", n->lineno);
 	struct syntax_block *block = (struct syntax_block *)n;
-	symbol_table_walk(block->sym, log_block_symbols);
+	symbol_table_walk(block->symtab, log_block_symbols);
 
 	if(n->parent->type != STX_CHUNK) fprintf(t->fp, " {\n");
 	int val = trans_syntax_node_children(t, n);
