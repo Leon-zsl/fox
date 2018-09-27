@@ -181,8 +181,14 @@ static int trans_syntax_chunk(struct translator *t, struct syntax_node *n) {
 	return 1;
 }
 
+static void log_block_symbols(const char *name, struct symbol *s) {
+	log_info("block symbols: %s", name);
+}
+
 static int trans_syntax_block(struct translator *t, struct syntax_node *n) {
 	log_info("trans block %d", n->lineno);
+	struct syntax_block *block = (struct syntax_block *)n;
+	symbol_table_walk(block->sym, log_block_symbols);
 
 	if(n->parent->type != STX_CHUNK) fprintf(t->fp, " {\n");
 	int val = trans_syntax_node_children(t, n);

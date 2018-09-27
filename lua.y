@@ -64,10 +64,11 @@ void gen_stmt_symtable(struct syntax_block *b, struct syntax_statement *stmt) {
 	case STMT_VAR:
 	{
 		if(chunk_scope(&stmt->n)) {
+			c = stmt->n.children;
 			while(c && c->type == STX_VARIABLE) {
 				struct syntax_variable *v = (struct syntax_variable *)c;
 				if(v->tag == VAR_NORMAL) {
-					char * name = fox_strcat("v_", v->name);
+					char *name = fox_strcat("v_", v->name);
 					struct symbol *s = symbol_create(name, SYM_VAR);
 					free(name);
 					symbol_table_insert(b->sym, s);
@@ -75,9 +76,33 @@ void gen_stmt_symtable(struct syntax_block *b, struct syntax_statement *stmt) {
 				c = c->next;
 			}
 		} else {
-			log_info("skip non chunk scope var stmt:%d %s \n",
-					 stmt->n.lineno,
-					 syntax_statement_tag_string(stmt->tag));
+			c = stmt->n.children;
+			while(c && c->type == STX_VARIABLE) {
+				struct syntax_variable *v = (struct syntax_variable *)c;
+				if(v->tag == VAR_NORMAL) {
+					char *name1 = fox_strcat("v_", v->name);
+					char *name2 = fox_strcat("lv_", v->name);
+					bool found = FALSE;
+					struct syntax_block *cb = b;
+					while(cb) {
+						struct symbol *cs1 = symbol_table_get(cb->sym, name1);
+						struct symbol *cs2 = symbol_table_get(cb->sym, name2);
+						if(cs1 || cs2) { found = TRUE; break; }
+						struct syntax_node *cp = cb->n.parent;
+						while(cp && cp->type != STX_BLOCK) cp = cp->parent;
+						if(!cp) break;
+						cb = (struct syntax_block *)cp;
+					}
+
+					if(!found) {
+						struct symbol *s = symbol_create(name1, SYM_VAR);
+						symbol_table_insert(b->sym, s);						
+					}
+					free(name1);
+					free(name2);
+				}
+				c = c->next;
+			}
 		}
 
 		c = stmt->n.children;
