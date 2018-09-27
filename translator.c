@@ -62,7 +62,7 @@ struct translator {
 	struct syntax_tree *tree;
 	struct symbol_table *table;
 	FILE *fp;
-	int retstmt;
+	bool exports;
 };
 
 static struct translator *translator_create(struct syntax_tree *tree,
@@ -78,7 +78,7 @@ static struct translator *translator_create(struct syntax_tree *tree,
 	t->tree = tree;
 	t->table = table;
 	t->fp = fp;
-	t->retstmt = RET_NO;
+	t->exports = FALSE;
 	return t;
 }
 
@@ -149,9 +149,26 @@ static void printf_tab(struct translator *t, struct syntax_node *n) {
 }
 */
 
+static bool chunk_scope(struct syntax_node *n) {
+	struct syntax_node *p = n;
+	while(p && p->type != STX_BLOCK) p = p->next;
+	if(!p) return FALSE;
+	return p->parent && p->parent->type == STX_CHUNK;
+}
+
+static int insert_symbol(struct symbol *s, struct syntax_node *n) {
+	struct syntax_node *p = n;
+	while(p && p->type != STX_BLOCK) p = p->parent;
+	if(!p) return 0;
+	struct syntax_block *block = (struct syntax_block *)p;
+	symbol_table_insert(block->sym, s);
+	return 1;
+}
+
 static struct translator *translator = NULL;
 static void exports_handler(const char *name, struct symbol *s) {
 	if(translator) {
+		log_info("exports chunk names %s", name);
 		fprintf(translator->fp, name);
 		fprintf(translator->fp, ":");
 		fprintf(translator->fp, name);
@@ -171,17 +188,17 @@ static int trans_syntax_node_children(struct translator *t, struct syntax_node *
 static int trans_syntax_chunk(struct translator *t, struct syntax_node *n) {
 	log_info("trans chunk %d", n->lineno);
 	
-	int val = trans_syntax_node_children(t, n);
+	int val = trans_syntax_block(t, n->children);
 	if(!val) return 0;
 
-	if(t->retstmt == RET_SYMBOL) {
-		fprintf(t->fp, "\n\nmodule.exports = {\n");
-		translator = t;
-		symbol_table_walk(t->table, exports_handler);
-		fseek(t->fp, -2, SEEK_END);
-		//fprintf(t->fp, "  "); //eat the last ,\n
-		translator = NULL;
-		fprintf(t->fp, "\n}\n");
+	if(!t->exports) {
+		/* struct syntax_block *block = (struct syntax_block *)n->children; */
+		/* fprintf(t->fp, "\n\nmodule.exports = {\n  "); */
+		/* translator = t; */
+		/* symbol_table_walk(block->sym, exports_handler); */
+		/* fseek(t->fp, -2, SEEK_END); */
+		/* translator = NULL; */
+		/* fprintf(t->fp, "\n}\n"); */
 	}
 	return 1;
 }
@@ -248,7 +265,7 @@ static int trans_local_assign(struct translator *t, struct syntax_statement *stm
 		if(!val) return 0;
 
 		fprintf(t->fp, "\n");
-		return 1;			
+		return 1;
 	} else {
 		log_error("assign count mismatch %d:%d %d", stmt->n.lineno, ncnt, ecnt);
 		return 0;			
@@ -352,9 +369,8 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 	}
 	case STMT_RETURN:
 	{
-		struct syntax_node *p = n->parent->parent;		
 		if(!n->children) {
-			if(p->type == STX_CHUNK) {
+			if(chunk_scope(n)) {
 				return 1;
 			} else {
 				fprintf(t->fp, "return");
@@ -362,9 +378,10 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 			}
 		}
 		
-		if(p->type == STX_CHUNK) {
+		if(chunk_scope(n)) {
+			log_info("chunk return:%d:%s", n->lineno, syntax_statement_tag_string(stmt->tag));
 			fprintf(t->fp, "\n\nmodule.exports = ");
-			t->retstmt |= RET_EXP;
+			t->exports = TRUE;
 		} else {
 			fprintf(t->fp, "return ");
 		}
@@ -574,18 +591,14 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 	}
 	case STMT_VAR:
 	{
-		struct syntax_node *p = n->parent->parent;
-		if(p->type == STX_CHUNK) {
-			struct syntax_node *c = n->children;
-			while(c && c->type == STX_VARIABLE) {
-				struct syntax_variable *v = (struct syntax_variable *)c;
-				if(v->tag == VAR_NORMAL) {
-					struct symbol *s = symbol_create(v->name, c);
-					symbol_table_insert(t->table, s);
-					t->retstmt |= RET_SYMBOL;
-				}
-				c = c->next;
+		struct syntax_node *c = n->children;
+		while(c && c->type == STX_VARIABLE) {
+			struct syntax_variable *v = (struct syntax_variable *)c;
+			if(v->tag == VAR_NORMAL) {
+				struct symbol *s = symbol_create(v->name, c);
+				insert_symbol(s, c);
 			}
+			c = c->next;
 		}
 		return trans_assign(t, stmt);
 	}
@@ -595,14 +608,10 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 	}
 	case STMT_FUNC:
 	{
-		struct syntax_node *p = n->parent->parent;
-		if(p->type == STX_CHUNK) {
-			struct syntax_function *func = (struct syntax_function *)n->children;
-			if(func->name && !strstr(func->name, ".") && !strstr(func->name, ":")) {
-				struct symbol *s = symbol_create(func->name, &func->n);
-				symbol_table_insert(t->table, s);
-				t->retstmt |= RET_SYMBOL;
-			}
+		struct syntax_function *func = (struct syntax_function *)n->children;
+		if(func->name && !strstr(func->name, ".") && !strstr(func->name, ":")) {
+			struct symbol *s = symbol_create(func->name, &func->n);
+			insert_symbol(s, &func->n);
 		}
 		return trans_syntax_function(t, n->children);
 	}

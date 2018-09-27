@@ -53,6 +53,7 @@ struct syntax_chunk {
 
 struct syntax_block {
 	struct syntax_node n;
+	struct symbol_table *sym;
 };
 
 enum syntax_statement_tag {

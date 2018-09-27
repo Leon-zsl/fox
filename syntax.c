@@ -1,5 +1,6 @@
 #include "fox.h"
 #include "syntax.h"
+#include "symbol.h"
 
 struct syntax_tree *syntax_tree_create() {
 	struct syntax_tree *t = malloc(sizeof(struct syntax_tree));
@@ -336,11 +337,13 @@ void release_syntax_chunk(struct syntax_chunk *chunk) {
 struct syntax_block *create_syntax_block() {
 	struct syntax_block *block = malloc(sizeof(struct syntax_block));
 	syntax_node_init(&block->n, STX_BLOCK);
+	block->sym = symbol_table_create();
 	return block;
 }
 
 void release_syntax_block(struct syntax_block *block) {
 	syntax_node_release_children(&block->n);
+	symbol_table_release(block->sym);
 	free(block);	
 }
 
