@@ -10,9 +10,9 @@
 #include "translator.h"
 
 #ifdef DEBUG
-int log_level = LOG_MSG;
+int log_level = LOG_DEBUG;
 #else
-int log_level = LOG_ERR;
+int log_level = LOG_MSG;
 #endif
 
 int ensure_path(const char *srcpath, const char *destpath) {
@@ -67,7 +67,6 @@ int process(const char *srcpath, const char *destpath) {
 			return 0;
 		}
 
-		log_info("parse file:%s", srcpath);
 		struct syntax_tree *tree = NULL;
 		struct symbol_table *table = NULL;
 		int val = parse(srcpath, &tree, &table);
@@ -133,7 +132,7 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	log_info("processing start... src: %s, dest: %s\n", argv[1], argv[2]);
+	log_info("processing start... src: %s, dest: %s", argv[1], argv[2]);
 
 	int srclen = strlen(argv[1]);
 	char *srcpath = malloc(srclen+1);

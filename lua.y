@@ -45,9 +45,9 @@ void gen_stmt_symtable(struct syntax_block *b, struct syntax_statement *stmt) {
 			strncpy(tmp, p + start, end - start);
 			char *name = fox_strcat("lv_", tmp);
 
-			struct symbol *s = symbol_create(name, SYM_VAR_LOCAL);
+			struct symbol *s = symbol_create(name, &stmt->n);
 			free(name);
-			symbol_table_insert(b->sym, s);
+			symbol_table_insert(b->symtab, s);
 			
 			if(p[end] == '\0') break;
 			end++;
@@ -69,9 +69,9 @@ void gen_stmt_symtable(struct syntax_block *b, struct syntax_statement *stmt) {
 				struct syntax_variable *v = (struct syntax_variable *)c;
 				if(v->tag == VAR_NORMAL) {
 					char *name = fox_strcat("v_", v->name);
-					struct symbol *s = symbol_create(name, SYM_VAR);
+					struct symbol *s = symbol_create(name, c);
 					free(name);
-					symbol_table_insert(b->sym, s);
+					symbol_table_insert(b->symtab, s);
 				}
 				c = c->next;
 			}
@@ -85,8 +85,8 @@ void gen_stmt_symtable(struct syntax_block *b, struct syntax_statement *stmt) {
 					bool found = FALSE;
 					struct syntax_block *cb = b;
 					while(cb) {
-						struct symbol *cs1 = symbol_table_get(cb->sym, name1);
-						struct symbol *cs2 = symbol_table_get(cb->sym, name2);
+						struct symbol *cs1 = symbol_table_get(cb->symtab, name1);
+						struct symbol *cs2 = symbol_table_get(cb->symtab, name2);
 						if(cs1 || cs2) { found = TRUE; break; }
 						struct syntax_node *cp = cb->n.parent;
 						while(cp && cp->type != STX_BLOCK) cp = cp->parent;
@@ -95,8 +95,8 @@ void gen_stmt_symtable(struct syntax_block *b, struct syntax_statement *stmt) {
 					}
 
 					if(!found) {
-						struct symbol *s = symbol_create(name1, SYM_VAR);
-						symbol_table_insert(b->sym, s);						
+						struct symbol *s = symbol_create(name1, c);
+						symbol_table_insert(b->symtab, s);						
 					}
 					free(name1);
 					free(name2);
@@ -117,9 +117,9 @@ void gen_stmt_symtable(struct syntax_block *b, struct syntax_statement *stmt) {
 		struct syntax_function *func = (struct syntax_function *)c;
 		if(func->name && !strstr(func->name, ".") && !strstr(func->name, ":")) {
 			char * name = fox_strcat("f_", func->name);
-			struct symbol *s = symbol_create(name, SYM_FUNC);
+			struct symbol *s = symbol_create(name, c);
 			free(name);
-			symbol_table_insert(b->sym, s);
+			symbol_table_insert(b->symtab, s);
 		}
 		gen_node_symtable(b, stmt->n.children);
 		break;
@@ -129,9 +129,9 @@ void gen_stmt_symtable(struct syntax_block *b, struct syntax_statement *stmt) {
 		struct syntax_function *func = (struct syntax_function *)c;
 		if(func->name && !strstr(func->name, ".") && !strstr(func->name, ":")) {
 			char * name = fox_strcat("lf_", func->name);
-			struct symbol *s = symbol_create(name, SYM_FUNC_LOCAL);
+			struct symbol *s = symbol_create(name, c);
 			free(name);
-			symbol_table_insert(b->sym, s);
+			symbol_table_insert(b->symtab, s);
 		}
 		gen_node_symtable(b, stmt->n.children);
 		break;
@@ -441,7 +441,6 @@ elsestmt:		/* empty */
 				}
 		|		ELSEIF exp THEN block elsestmt
 				{
-					log_info("yacc elseif found:%d", yylineno);
 					struct syntax_statement *stmt = create_syntax_statement();
 					stmt->n.lineno = yylineno;
 					stmt->tag = STMT_ELSEIF;

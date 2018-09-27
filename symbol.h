@@ -1,19 +1,12 @@
 #ifndef __SYMBOL_H__
 #define __SYMBOL_H__
 
-enum symbol_type {
-	SYM_VAR,
-	SYM_FUNC,
-	SYM_VAR_LOCAL,
-	SYM_FUNC_LOCAL,
-};
-
 struct symbol {
 	char *name;	/* name must be unique for unique symbol */
-	enum symbol_type type;
+	void *udata;
 };
 
-struct symbol *symbol_create(const char *name, enum symbol_type type);
+struct symbol *symbol_create(const char *name, void *udata);
 void symbol_release(struct symbol *s);
 
 struct symbol_table {

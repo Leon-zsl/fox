@@ -7,10 +7,10 @@ static void clear_handler(size_t key, void *value) {
 	symbol_release(value);
 }
 
-struct symbol *symbol_create(const char *name, enum symbol_type type) {
+struct symbol *symbol_create(const char *name, void *udata) {
 	struct symbol *s = malloc(sizeof(struct symbol));
 	s->name = fox_strdup(name);
-	s->type = type;
+	s->udata = udata;
 	return s;
 }
 

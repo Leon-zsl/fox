@@ -277,7 +277,7 @@ struct symbol_table *syntax_node_symbol_table(struct syntax_node *n) {
 	struct syntax_node *p = n;
 	while(p && p->type != STX_BLOCK) p = p->parent;
 	if(!p) return NULL;
-	return ((struct syntax_block *)p)->sym;
+	return ((struct syntax_block *)p)->symtab;
 }
 
 struct symbol_table *syntax_node_parent_symbol_table(struct syntax_node *n) {
@@ -289,7 +289,7 @@ struct symbol_table *syntax_node_parent_symbol_table(struct syntax_node *n) {
 	p = p->parent;
 	while(p && p->type != STX_BLOCK) p = p->parent;
 	if(!p) return NULL;
-	return ((struct syntax_block *)p)->sym;
+	return ((struct syntax_block *)p)->symtab;
 }
 
 int chunk_scope(struct syntax_node *n) {
@@ -370,13 +370,13 @@ void release_syntax_chunk(struct syntax_chunk *chunk) {
 struct syntax_block *create_syntax_block() {
 	struct syntax_block *block = malloc(sizeof(struct syntax_block));
 	syntax_node_init(&block->n, STX_BLOCK);
-	block->sym = symbol_table_create();
+	block->symtab = symbol_table_create();
 	return block;
 }
 
 void release_syntax_block(struct syntax_block *block) {
 	syntax_node_release_children(&block->n);
-	symbol_table_release(block->sym);
+	symbol_table_release(block->symtab);
 	free(block);	
 }
 

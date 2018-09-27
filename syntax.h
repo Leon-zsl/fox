@@ -53,7 +53,7 @@ struct syntax_chunk {
 
 struct syntax_block {
 	struct syntax_node n;
-	struct symbol_table *sym;
+	struct symbol_table *symtab;
 };
 
 struct symbol_table *syntax_node_symbol_table(struct syntax_node *n);

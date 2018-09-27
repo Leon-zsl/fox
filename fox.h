@@ -11,10 +11,11 @@
 #define FOX_VERSION "0.0.1"
 
 extern int log_level;
-#define LOG_NO   0
-#define LOG_ERR  1
-#define LOG_WARN 2
-#define LOG_MSG  3
+#define LOG_NO    0
+#define LOG_ERR   1
+#define LOG_WARN  2
+#define LOG_MSG   3
+#define LOG_DEBUG 4
 
 #define log_error(fmt, ...) 			        \
 	if(log_level >= LOG_ERR) {					\
@@ -35,6 +36,13 @@ extern int log_level;
 		char errmsg[1024];						\
 		sprintf(errmsg, fmt, ##__VA_ARGS__);	\
 		fprintf(stdout, "[INFO]FILE:%s LINE:%d %s\n", __FILE__, __LINE__, errmsg); \
+	}
+
+#define log_debug(fmt, ...)                     \
+	if(log_level >= LOG_DEBUG) {				\
+		char errmsg[1024];						\
+		sprintf(errmsg, fmt, ##__VA_ARGS__);	\
+		fprintf(stdout, "[DEBUG]FILE:%s LINE:%d %s\n", __FILE__, __LINE__, errmsg); \
 	}
 
 #define log_assert(condition, fmt, ...)			\

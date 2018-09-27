@@ -34,6 +34,8 @@ int parse(const char *filename,
 	yyset_debug(0);
 #endif
 
+	log_info("parse lua program start: %s", filename);
+	
 	parse_tree = syntax_tree_create();
 	parse_table = symbol_table_create();	
 	int val = yyparse();
@@ -56,7 +58,7 @@ struct translator {
 	struct syntax_tree *tree;
 	struct symbol_table *table;
 	FILE *fp;
-	bool exports;
+	bool exp_symtab;
 };
 
 static struct translator *translator_create(struct syntax_tree *tree,
@@ -72,7 +74,7 @@ static struct translator *translator_create(struct syntax_tree *tree,
 	t->tree = tree;
 	t->table = table;
 	t->fp = fp;
-	t->exports = FALSE;
+	t->exp_symtab = FALSE;
 	return t;
 }
 
@@ -92,6 +94,8 @@ int translate(const char *filename,
 		log_error("syntax tree or symbol table is invalid");
 		return 0;
 	}
+	
+	log_info("translate lua program start: %s", filename);
 
 	struct translator *t = translator_create(tree, table, filename);
 	if(!t) {
@@ -143,16 +147,15 @@ static void printf_tab(struct translator *t, struct syntax_node *n) {
 }
 */
 
-/* static struct translator *translator = NULL; */
-/* static void exports_handler(const char *name, struct symbol *s) { */
-/* 	if(translator) { */
-/* 		log_info("exports chunk names %s", name); */
-/* 		fprintf(translator->fp, name); */
-/* 		fprintf(translator->fp, ":"); */
-/* 		fprintf(translator->fp, name); */
-/* 		fprintf(translator->fp, ",\n"); */
-/* 	} */
-/* } */
+static struct translator *translator = NULL;
+static void exports_handler(const char *name, struct symbol *s) {
+	if(translator) {
+		fprintf(translator->fp, name);
+		fprintf(translator->fp, ":");
+		fprintf(translator->fp, name);
+		fprintf(translator->fp, ",\n");
+	}
+}
 
 static int trans_syntax_node_children(struct translator *t, struct syntax_node *n) {
 	struct syntax_node *c = n->children;
@@ -164,29 +167,29 @@ static int trans_syntax_node_children(struct translator *t, struct syntax_node *
 }
 
 static int trans_syntax_chunk(struct translator *t, struct syntax_node *n) {
-	log_info("trans chunk %d", n->lineno);
+	log_debug("trans chunk %d", n->lineno);
 	
 	int val = trans_syntax_block(t, n->children);
 	if(!val) return 0;
 
-	if(!t->exports) {
-		/* struct syntax_block *block = (struct syntax_block *)n->children; */
-		/* fprintf(t->fp, "\n\nmodule.exports = {\n  "); */
-		/* translator = t; */
-		/* symbol_table_walk(block->sym, exports_handler); */
-		/* fseek(t->fp, -2, SEEK_END); */
-		/* translator = NULL; */
-		/* fprintf(t->fp, "\n}\n"); */
+	if(t->exp_symtab) {
+		struct syntax_block *block = (struct syntax_block *)n->children;
+		fprintf(t->fp, "\n\nmodule.exports = {\n  ");
+		translator = t;
+		symbol_table_walk(block->sym, exports_handler);
+		fseek(t->fp, -2, SEEK_END);
+		translator = NULL;
+		fprintf(t->fp, "\n}\n");
 	}
 	return 1;
 }
 
 static void log_block_symbols(const char *name, struct symbol *s) {
-	log_info("block symbols: %s", name);
+	log_debug("block symbols %d:%s", ((struct syntax_node *)s->udata)->lineno, name);
 }
 
 static int trans_syntax_block(struct translator *t, struct syntax_node *n) {
-	log_info("trans block %d", n->lineno);
+	log_debug("trans block %d", n->lineno);
 	struct syntax_block *block = (struct syntax_block *)n;
 	symbol_table_walk(block->sym, log_block_symbols);
 
@@ -329,7 +332,9 @@ static int trans_assign(struct translator *t, struct syntax_statement *stmt) {
 
 static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 	struct syntax_statement *stmt = (struct syntax_statement *)n;
-	log_info("trans statement %d:%s", n->lineno, syntax_statement_tag_string(stmt->tag));
+	log_debug("trans statement %d:%s",
+			  n->lineno,
+			  syntax_statement_tag_string(stmt->tag));
 	
 	switch(stmt->tag) {
 	case STMT_EMPTY:
@@ -363,9 +368,8 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 		}
 		
 		if(chunk_scope(n)) {
-			log_info("chunk return:%d:%s", n->lineno, syntax_statement_tag_string(stmt->tag));
 			fprintf(t->fp, "\n\nmodule.exports = ");
-			t->exports = TRUE;
+			t->exp_symtab = FALSE;
 		} else {
 			fprintf(t->fp, "return ");
 		}
@@ -542,11 +546,9 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 	}
 	case STMT_IF:
 	{
-		log_info("stmt_if");
 		fprintf(t->fp, "if(");
 		int val = trans_syntax_expression(t, n->children);
 		if(!val) return 0;
-		log_info("stmt_if 111");
 		fprintf(t->fp, ")");
 		val = trans_syntax_block(t, n->children->next);
 		if(!val) return 0;
@@ -623,7 +625,7 @@ static int trans_syntax_statement(struct translator *t, struct syntax_node *n) {
 
 static int trans_syntax_expression(struct translator *t, struct syntax_node *n) {
 	struct syntax_expression * exp = (struct syntax_expression *)n;
-	log_info("trans expression %d:%s",
+	log_debug("trans expression %d:%s",
 			 n->lineno,
 			 syntax_expression_tag_string(exp->tag));
 
@@ -824,7 +826,7 @@ static int trans_syntax_expression(struct translator *t, struct syntax_node *n) 
 
 static int trans_syntax_variable(struct translator *t, struct syntax_node *n) {
 	struct syntax_variable *var = (struct syntax_variable *)n;
-	log_info("trans variable %d: %d, %s, name:%s",
+	log_debug("trans variable %d: %d, %s, name:%s",
 			 n->lineno,
 			 var->tag,
 			 syntax_variable_tag_string(var->tag),
@@ -865,7 +867,7 @@ static int trans_syntax_variable(struct translator *t, struct syntax_node *n) {
 
 static int trans_syntax_function(struct translator *t, struct syntax_node *n) {
 	struct syntax_function *func = (struct syntax_function *)n;
-	log_info("trans function %d, name:%s", n->lineno, func->name ? func->name : "");
+	log_debug("trans function %d, name:%s", n->lineno, func->name ? func->name : "");
 
 	if(func->name) {
 		if((strstr(func->name, ".") || strstr(func->name, ":"))) {
@@ -912,7 +914,7 @@ static int trans_syntax_function(struct translator *t, struct syntax_node *n) {
 
 static int trans_syntax_functioncall(struct translator *t, struct syntax_node *n) {
 	struct syntax_functioncall *fcall = (struct syntax_functioncall *)n;
-	log_info("trans function call %d", n->lineno);
+	log_debug("trans function call %d", n->lineno);
 	
 	int val = trans_syntax_expression(t, n->children);
 	if(!val) return 0;
@@ -937,7 +939,7 @@ static int trans_syntax_functioncall(struct translator *t, struct syntax_node *n
 
 static int trans_syntax_argument(struct translator *t, struct syntax_node *n) {
 	struct syntax_argument *arg = (struct syntax_argument *)n;
-	log_info("trans argument %d:%s",
+	log_debug("trans argument %d:%s",
 			 n->lineno,
 			 syntax_argument_tag_string(arg->tag));
 	switch(arg->tag) {
@@ -971,7 +973,7 @@ static int trans_syntax_argument(struct translator *t, struct syntax_node *n) {
 }
 
 static int trans_syntax_table(struct translator *t, struct syntax_node *n) {
-	log_info("trans table %d", n->lineno);
+	log_debug("trans table %d", n->lineno);
 	if(!n->children) {
 		fprintf(t->fp, "{}");
 		return 1;
@@ -1010,7 +1012,7 @@ static int trans_syntax_table(struct translator *t, struct syntax_node *n) {
 
 static int trans_syntax_field(struct translator *t, struct syntax_node *n) {
 	struct syntax_field *field = (struct syntax_field *)n;
-	log_info("trans field, %d:%s, name:%s",
+	log_debug("trans field, %d:%s, name:%s",
 			 n->lineno,
 			 syntax_field_tag_string(field->tag),
 			 field->name ? field->name : "");
@@ -1040,7 +1042,7 @@ static int trans_syntax_field(struct translator *t, struct syntax_node *n) {
 }
 
 static int translate_syntax_node(struct translator *t, struct syntax_node *n) {
-	log_info("trans node line:%d, type:%s, depth:%d, children:%d",
+	log_debug("trans node line:%d, type:%s, depth:%d, children:%d",
 			 n->lineno,
 			 syntax_node_type_string(n->type),
 			 syntax_node_depth(n),
